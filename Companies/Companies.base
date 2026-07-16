@@ -1,0 +1,15 @@
+properties:
+  file.name:
+    displayName: Company
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.hasTag("Company")
+    order:
+      - file.name
+      - Division
+      - Stakeholders
+      - Projects
+      - Notes

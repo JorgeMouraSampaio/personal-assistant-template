@@ -1,0 +1,42 @@
+properties:
+  file.name:
+    displayName: Meeting
+  note.Date:
+    displayName: Date
+  note.Attendees:
+    displayName: Attendees
+  note.Company:
+    displayName: Company
+  note.Project:
+    displayName: Project
+  note.Transcript:
+    displayName: Transcript
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.inFolder("Meetings/Processed Meetings")
+    order:
+      - file.name
+      - Date
+      - Attendees
+      - Company
+      - Project
+      - Transcript
+    sort:
+      - property: Date
+        direction: DESC
+  - type: table
+    name: Project Meetings
+    filters:
+      and:
+        - file.inFolder("Meetings/Processed Meetings")
+        - file.hasLink(this.file)
+    order:
+      - file.name
+      - Date
+      - Attendees
+    sort:
+      - property: Date
+        direction: DESC

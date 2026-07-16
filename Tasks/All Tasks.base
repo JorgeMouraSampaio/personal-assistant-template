@@ -1,0 +1,75 @@
+properties:
+  file.name:
+    displayName: Title
+  note.Task Number:
+    displayName: Task
+  note.Status:
+    displayName: Status
+  note.Project:
+    displayName: Project
+  note.Stakeholders:
+    displayName: Stakeholders
+  note.Company:
+    displayName: Company
+  note.Created Date:
+    displayName: Created Date
+  note.Due Date:
+    displayName: Due Date
+  note.Notes:
+    displayName: Notes
+  note.Links:
+    displayName: Links
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.hasTag("Task")
+    order:
+      - Task Number
+      - file.name
+      - Status
+      - Project
+      - Created Date
+      - Due Date
+      - Stakeholders
+      - Company
+      - Notes
+      - Links
+    sort:
+      - property: Task Number
+        direction: ASC
+    columnSize:
+      file.name: 457
+  - type: tasknotesKanban
+    name: Project Board
+    filters:
+      and:
+        - file.hasTag("Task")
+        - file.hasLink(this.file)
+    groupBy:
+      property: Status
+      direction: ASC
+    order:
+      - file.name
+      - Status
+      - Due Date
+      - Stakeholders
+    options:
+      columnWidth: 260
+      hideEmptyColumns: false
+  - type: table
+    name: Project Table
+    filters:
+      and:
+        - file.hasTag("Task")
+        - file.hasLink(this.file)
+    order:
+      - file.name
+      - Task Number
+      - Status
+      - Due Date
+      - Stakeholders
+    sort:
+      - property: Task Number
+        direction: ASC

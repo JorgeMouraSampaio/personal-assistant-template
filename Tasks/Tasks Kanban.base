@@ -1,0 +1,25 @@
+properties:
+  file.name:
+    displayName: Task
+  note.Status:
+    displayName: Status
+  note.Due Date:
+    displayName: Due Date
+views:
+  - type: tasknotesKanban
+    name: Board
+    filters:
+      and:
+        - file.hasTag("Task")
+    groupBy:
+      property: Status
+      direction: ASC
+    order:
+      - file.name
+      - Status
+      - Due Date
+      - Project
+      - Stakeholders
+    options:
+      columnWidth: 280
+      hideEmptyColumns: false

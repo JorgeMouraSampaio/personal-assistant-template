@@ -1,0 +1,38 @@
+properties:
+  file.name:
+    displayName: Session
+  note.Date:
+    displayName: Date
+  note.Project:
+    displayName: Project
+  note.Company:
+    displayName: Company
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.hasTag("Session")
+    order:
+      - file.name
+      - Date
+      - Project
+      - Company
+    sort:
+      - property: Date
+        direction: DESC
+  # Powers the Sessions section of every project dashboard — embedded by
+  # reference (![[Sessions.base#Project Sessions]]); this.file = the embedding
+  # note. Empty when opened directly. Load-bearing.
+  - type: table
+    name: Project Sessions
+    filters:
+      and:
+        - file.hasTag("Session")
+        - file.hasLink(this.file)
+    order:
+      - file.name
+      - Date
+    sort:
+      - property: Date
+        direction: DESC
