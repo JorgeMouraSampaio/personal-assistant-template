@@ -1,4 +1,12 @@
+# macOS
 .DS_Store
+
+# Obsidian churn (machine/session state, regenerated constantly)
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .trash/
+
+# Granola inbox (transient — re-dumped every sync; processed copies live in
+# Meetings/Processed Meetings/ and Meetings/Transcripts/). Keep only the README.
+Meetings/Inbox/*
+!Meetings/Inbox/README.md

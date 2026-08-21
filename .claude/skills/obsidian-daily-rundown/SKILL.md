@@ -2,13 +2,18 @@
 name: obsidian-daily-rundown
 description: >-
   Generate the task rundown note in this Obsidian vault — a digest of open tasks
-  bucketed by due date, written into Tasks/Rundowns/. Two layouts: a morning
-  rundown (overdue / due today / this week / next week / no due date) and an
-  end-of-day rundown (due tomorrow / this week / next week / no due date / all
-  ongoing tasks). Use when the user asks "what's on my plate", "daily rundown",
-  "on-demand rundown", "end-of-day rundown", "what's due", or when a scheduled
-  run fires. Reads every task note's Status and Due Date; creates no tasks and
-  changes no Statuses.
+  bucketed by due date into one bucket per business day for the next five business
+  days (each labeled by its weekday name), plus a cross-cutting "Ongoing Tasks"
+  section for everything In Progress regardless of due date, written into
+  Tasks/Rundowns/. Two layouts: a morning rundown (ongoing tasks / overdue / due
+  today / due tomorrow / then each of the next four business days by weekday / due
+  later / no due date) and an end-of-day rundown (ongoing tasks first, then the same
+  forward business-day buckets without "due today", plus all ongoing tasks). Use when
+  the user asks "what's on my plate",
+  "backlog",
+  "daily rundown", "on-demand rundown", "end-of-day rundown", "what's due", or when
+  a scheduled run fires. Reads every task note's Status and Due Date; creates no
+  tasks and changes no Statuses.
 ---
 
 # Task Rundown (open tasks by due date → digest note)
@@ -27,6 +32,9 @@ Two scheduled jobs, plus on-demand:
 - **On-demand** — the user asks any time. Default to the **morning** layout,
   unless they ask for an "end-of-day rundown" (then use that layout). On-demand
   additionally presents the rundown in the chat reply (the user is waiting on it).
+  In the chat reply, render **one bullet per task** (each on its own line, led by
+  its `#<Task Number>`) — never group, compress, or collapse multiple tasks onto a
+  single line or into category summaries, no matter how long the list.
 
 There is only ever **one** rundown note (see Retention); every run overwrites it
 with a fresh snapshot. The `Generated` frontmatter stamps the datetime, mode, and
@@ -38,37 +46,88 @@ trigger.
   `.base` files).
 - **Open** = `Status` is `Not Started` or `In Progress`. Completed and Discarded
   never appear.
-- Weeks run **Monday–Sunday**, computed from today.
-- A dated task lands in exactly **one** dated bucket — its soonest matching one
-  (so a task due tomorrow is never repeated under "this week").
+- Buckets are **rolling per-business-day windows relative to today** (`T`), one
+  bucket per business day for the **next five business days**. Compute `BD1`…`BD5`
+  by stepping forward from `T`, skipping Sat/Sun. From a **Wednesday**: BD1=Thu,
+  BD2=Fri, BD3=Mon, BD4=Tue, BD5=Wed(next). (Five business days always spans exactly
+  one week, so BD5 lands on the **same weekday as `T`**, one week out.)
+- The dated buckets are contiguous, half-open, and **mutually exclusive** — a task
+  lands in its soonest match. **Weekend due dates fold into the next business day's
+  bucket** (a Sat/Sun task lands in that Monday bucket):
+  - **Overdue** — `due < T`
+  - **Due today** — `due = T`
+  - **BD1** — `T < due ≤ BD1`
+  - **BD2** — `BD1 < due ≤ BD2`
+  - **BD3** — `BD2 < due ≤ BD3`
+  - **BD4** — `BD3 < due ≤ BD4`
+  - **BD5** — `BD4 < due ≤ BD5`
+  - **Due later** — `due > BD5`
+- **Heading labels use the weekday name of each bucket's business day**, auto-filled:
+  `Due today` for `T`; for BD1 use `Due tomorrow` when BD1 is the calendar day after
+  `T` (today is Mon–Thu), otherwise `Due <Weekday>` (on a Friday, BD1 is Monday →
+  `Due Monday`); `Due <Weekday>` for BD2–BD5 (e.g. `Due Friday`, `Due Monday`,
+  `Due Tuesday`, `Due Wednesday`). Then `Due later` (beyond BD5) and `No due date`.
+- **Ongoing Tasks** — a cross-cutting section, independent of the due-date buckets
+  above: every task with `Status: In Progress`, regardless of its due date (or lack
+  of one). This surfaces long-running active work that isn't necessarily near due,
+  so it doesn't get lost. It's additive, not exclusive — an In Progress task with a
+  near due date still appears in **both** its due-date bucket above **and** here.
+  Sort by due date then Task Number, undated last.
+- **No due date** (heading `## No due date ⚠️`) — every open task with a blank
+  `Due Date`, **regardless of Status** (both `Not Started` and `In Progress`). The
+  ⚠️ flags these as needing a due date. Undated **In Progress** tasks are **not**
+  excluded here (unlike the older backlog rule): they'd otherwise be easy to lose
+  track of, so they appear both here **and** under Ongoing Tasks. Sort by Task Number.
 - Sort dated buckets by due date then Task Number; sort undated by Task Number.
-- Render each task as `- [[Title]] — due YYYY-MM-DD (Ddd) · [[Project]] · Status`.
-  Omit the "due …" part where the bucket already implies the date (Due today, Due
-  tomorrow, No due date, and the undated rows of All Ongoing Tasks). `Project` is
-  the task's value (`[[Project]]` or plain `General task`).
+- Render each task as `- #<Task Number> [[Title]] — due YYYY-MM-DD (Ddd) · [[Project]] · Status`.
+  Always lead with the `#<Task Number>` (both in the note and in the on-demand chat
+  reply). Omit the "due …" part only for **Due today** and **No due date**; **keep**
+  it in every forward bucket (task lines carry the exact date, which also disambiguates
+  BD5 from today since they share a weekday name, and the weekend-absorbing Monday
+  bucket). `Project` is the task's value (`[[Project]]` or plain `General task`).
 
 ## Morning layout (9am job + default on-demand)
 
-Five sections, always present (empty bucket → `- None.`):
+Ten sections, always present (empty bucket → `- None.`), in order. **Ongoing Tasks
+leads** (active work first), then the due-date buckets:
 
-1. **Overdue** — `Due Date` before today
-2. **Due today** — `Due Date` = today
-3. **Due this week** — after today through this Sunday
-4. **Due next week** — next Monday through next Sunday
-5. **No due date** — blank `Due Date`
+1. **Ongoing Tasks** — every `Status: In Progress` task, cross-cutting (see above)
+2. **Overdue** — `due < T`
+3. **Due today** — `due = T`
+4. **BD1** — heading `## Due tomorrow` (or `## Due <Weekday>` if BD1 isn't calendar-tomorrow)
+5. **BD2** — `## Due <Weekday>`
+6. **BD3** — `## Due <Weekday>`
+7. **BD4** — `## Due <Weekday>`
+8. **BD5** — `## Due <Weekday>`
+9. **Due later** — `due > BD5` (heading `## Due later (> 5 business days)`)
+10. **No due date** — heading `## No due date ⚠️`; every open task with a blank
+    `Due Date`, regardless of Status (undated In Progress tasks appear here too, and
+    also under Ongoing Tasks)
 
-Footer: `N tasks due later than next week (not listed).`
+No footer (Due later is a listed section).
 
 ## End-of-day layout (6pm job + on-demand "end-of-day rundown")
 
-Five sections, always present (empty bucket → `- None.`):
+Same forward per-business-day buckets, but **no "Due today"** (the day is over; any
+still-open due-today task shows in All Ongoing Tasks), plus a full list at the end.
+Sections, always present (empty bucket → `- None.`). **Ongoing Tasks leads**, then
+the due-date buckets:
 
-1. **Due tomorrow** — `Due Date` = tomorrow
-2. **Due this week** — after tomorrow through this Sunday
-3. **Due next week** — next Monday through next Sunday
-4. **No due date** — blank `Due Date`
-5. **All Ongoing Tasks** — every open task, the complete list (a superset of the
-   buckets above), sorted by due date then Task Number, undated last
+1. **Ongoing Tasks** — every `Status: In Progress` task, cross-cutting (see above)
+2. **Overdue** — `due < T`
+3. **BD1** — `## Due tomorrow` (or `## Due <Weekday>`)
+4. **BD2** — `## Due <Weekday>`
+5. **BD3** — `## Due <Weekday>`
+6. **BD4** — `## Due <Weekday>`
+7. **BD5** — `## Due <Weekday>`
+8. **Due later** — `due > BD5`
+9. **No due date** — heading `## No due date ⚠️`; every open task with a blank
+   `Due Date`, regardless of Status (undated In Progress tasks appear here too, and
+   also under Ongoing Tasks)
+10. **All Ongoing Tasks** — every open task, the complete list (a superset of
+    everything above, including due-today and due-later tasks, regardless of
+    Status), sorted by due date then Task Number, undated last. (Distinct from
+    "Ongoing Tasks" above, which is filtered to `In Progress` only.)
 
 No footer — All Ongoing Tasks already lists everything.
 
@@ -88,28 +147,40 @@ Generated: 2026-07-08 18:00 (end-of-day, scheduled)
 ---
 # Task Rundown (end of day) — Wednesday, 2026-07-08
 
-## Due tomorrow
-- [[Task title]] — [[Project]] · Not Started
+## Overdue
+- [[Task title]] — due 2026-07-06 (Mon) · [[Project]] · Not Started
 
-## Due this week
-- [[Task title]] — due 2026-07-11 (Sat) · [[Project]] · Not Started
+## Due next business day
+- [[Task title]] — due 2026-07-09 (Thu) · [[Project]] · Not Started
 
-## Due next week
-- [[Task title]] — due 2026-07-15 (Wed) · [[Project]] · Not Started
+## Due within a week
+- [[Task title]] — due 2026-07-13 (Mon) · [[Project]] · Not Started
 
-## No due date
+## Due within two weeks
+- [[Task title]] — due 2026-07-20 (Mon) · [[Project]] · Not Started
+
+## No due date ⚠️
 - [[Task title]] — [[Project]] · Not Started
 
 ## All Ongoing Tasks
-- [[Task title]] — due 2026-07-11 (Sat) · [[Project]] · Not Started
+- [[Task title]] — due 2026-07-09 (Thu) · [[Project]] · Not Started
 - [[Task title]] — [[Project]] · Not Started
 ```
 
 (The morning layout uses the same frontmatter, heading `# Task Rundown — <Weekday>,
-<date>`, its five sections, and the "due later" footer. `Generated`'s label is the
-mode + trigger, e.g. `(morning, scheduled)` or `(morning, on-demand)`.)
+<date>`, and its ten sections in the order listed above — Ongoing Tasks, Overdue,
+Due today, the five forward business-day buckets, Due later, and No due date ⚠️ —
+with no footer. `Generated`'s label is the mode + trigger, e.g. `(morning, scheduled)`
+or `(morning, on-demand)`.)
 
 - Every section always present; an empty bucket gets `- None.`
+- **Pending task proposals.** If `Tasks/Pending/Proposed Tasks.md` holds any proposal
+  blocks, append a final `## Pending task proposals ⚠️` section (both layouts) with one
+  bullet per staged proposal: `- <Task title> (from [[<meeting>]])` plus due date if
+  set. This is the **only** conditional section: when the queue is empty, omit it
+  entirely. Flag it in the chat rundown too, with the count and a nudge to validate
+  ("3 task proposals from 2 meetings waiting on your OK"). Proposals are not tasks:
+  never number them, never count them in the due-date buckets or in All Ongoing Tasks.
 - **Retention:** keep only the current rundown. After writing today's, delete
   every other note in `Tasks/Rundowns/` — past rundowns have no value (they're
   disposable digests, not records), so only one ever exists at a time. (The
@@ -119,8 +190,9 @@ mode + trigger, e.g. `(morning, scheduled)` or `(morning, on-demand)`.)
 ## Guardrails
 
 - Read-only with respect to tasks: never create tasks, never touch `Status` or
-  any other task frontmatter from this skill.
-- `Tasks/Rundowns/` is shielded from the Task folder template (a `Noop.md`
-  Templater mapping plus a guard inside `Templates/Task.md`) — keep it that
-  way; rundown notes are created fully-formed.
+  any other task frontmatter from this skill. That includes the pending-proposal
+  queue: this skill only reports it, never creates from it or edits it.
+- `Tasks/Rundowns/` and `Tasks/Pending/` are shielded from the Task folder template
+  (a `Noop.md` Templater mapping plus guards inside `Templates/Task.md`); keep it
+  that way, both are created fully-formed.
 - Idempotent: running it again just rewrites today's note.

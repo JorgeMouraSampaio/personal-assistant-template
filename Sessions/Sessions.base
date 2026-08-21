@@ -21,9 +21,6 @@ views:
     sort:
       - property: Date
         direction: DESC
-  # Powers the Sessions section of every project dashboard — embedded by
-  # reference (![[Sessions.base#Project Sessions]]); this.file = the embedding
-  # note. Empty when opened directly. Load-bearing.
   - type: table
     name: Project Sessions
     filters:

@@ -19,6 +19,10 @@
       "template": "Templates/Noop.md"
     },
     {
+      "folder": "Tasks/Pending",
+      "template": "Templates/Noop.md"
+    },
+    {
       "folder": "People",
       "template": "Templates/Person.md"
     },

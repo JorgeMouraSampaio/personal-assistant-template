@@ -5,6 +5,12 @@ properties:
     displayName: Status
   note.Due Date:
     displayName: Due Date
+  note.Priority:
+    displayName: Priority
+  note.Effort:
+    displayName: Effort (min)
+  note.Booked ?:
+    displayName: Booked ?
 views:
   - type: tasknotesKanban
     name: Board
@@ -18,6 +24,9 @@ views:
       - file.name
       - Status
       - Due Date
+      - Priority
+      - Effort
+      - Booked ?
       - Project
       - Stakeholders
     options:

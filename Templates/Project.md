@@ -12,6 +12,28 @@ const names = companyFiles.map(f => f.basename).sort();
 const company = await tp.system.suggester(names, names, false, "Company?");
 if (!company) return;
 
+// Next project number = (highest existing number) + 1
+let maxNum = 0;
+for (const f of app.vault.getMarkdownFiles().filter(f => f.path.startsWith("Projects/"))) {
+  const pn = app.metadataCache.getFileCache(f)?.frontmatter?.["Project Number"];
+  if (pn != null) {
+    const n = parseInt(String(pn), 10);
+    if (!isNaN(n) && n > maxNum) maxNum = n;
+  }
+}
+const number = `${maxNum + 1}`;
+
+// Your OWN company's projects are classified internal vs personal (see
+// CLAUDE.md); other companies' projects carry no Division. Set OWN_COMPANY to
+// the basename of your own company's note, or "" to switch this off.
+const OWN_COMPANY = "Acme";
+let division = "";
+if (OWN_COMPANY && company === OWN_COMPANY) {
+  division = await tp.system.suggester(["internal", "personal"], ["internal", "personal"], false, "Project type?");
+  if (!division) return;
+}
+const divisionLine = division ? `Division: ${division}\n` : "";
+
 const status = (await tp.system.prompt("Status? (optional)", "", false)) ?? "";
 const link = (await tp.system.prompt("Link? (optional)", "", false)) ?? "";
 const start = tp.date.now("YYYY-MM-DD");
@@ -23,8 +45,9 @@ if (name.startsWith("Untitled")) name = (await tp.system.prompt("Project title?"
 tR += `---
 tags:
   - Project
+Project Number: "${number}"
 Company: "[[${company}]]"
-Start Date: ${start}
+${divisionLine}Start Date: ${start}
 End Date: ${end}
 Status: ${status}
 Link: ${link}
@@ -43,6 +66,10 @@ Link: ${link}
 ## Sessions
 
 ![[Sessions.base#Project Sessions]]
+
+## Resources
+
+![[Resources.base#Project Resources]]
 
 ## Key Decisions
 

@@ -9,8 +9,10 @@ description: >-
   into Meetings/Processed Meetings/ (Date, Attendees, Company, Project as wikilinks),
   files the raw transcript into Meetings/Transcripts/ tagged RawTranscript, auto-creates any missing
   People/Company/Project notes, extracts every action item / call-to-action, and
-  turns the USER'S OWN action items into Task notes following
-  obsidian-create-task. This is task-entry METHOD 2; METHOD 1 is obsidian-create-task.
+  PROPOSES the USER'S OWN action items as tasks for validation. the user signs off
+  before any Task note is written (unattended runs stage them in
+  Tasks/Pending/Proposed Tasks.md). This is task-entry METHOD 2; METHOD 1 is
+  obsidian-create-task.
 ---
 
 # Process Meeting (Granola inbox → filed note + transcript + tasks)
@@ -20,7 +22,14 @@ Markdown. Those raw files have useful content but no vault structure: no
 `[[wikilinks]]`, Granola's own frontmatter, and action items as loose prose. This
 skill turns one raw meeting into (a) a crosslinked meeting note filed in
 `Meetings/Processed Meetings/`, (b) its raw transcript filed in
-`Meetings/Transcripts/`, and (c) real Tasks for the user's own action items.
+`Meetings/Transcripts/`, and (c) a **validated** set of Tasks for the user's own
+action items.
+
+**Tasks are proposed, never auto-created.** Filing the meeting (note, transcript,
+entities, `## Action items`) happens straight away and needs no sign-off: the
+record has to get out of the inbox before the next Granola sync. Writing Task
+notes is gated: the user validates the extraction first. See
+"The validation gate" below; it is the one hard rule of this skill.
 
 **Granola's summary note is the canonical record — never write your own.**
 Processing = relabel and file Granola's note, crosslink it, and mine **it** (not
@@ -49,13 +58,22 @@ subfolders are permanent, Claude-owned homes:
 | Folder | Owner | Contents |
 |---|---|---|
 | `Meetings/Inbox/` | Granola sync | raw notes **and** raw transcripts — **inbox**, transient, re-dumped every sync (plus a `README.md` explaining it) |
-| `Meetings/Processed Meetings/` | this skill | clean crosslinked meeting notes — **the Meetings base** |
-| `Meetings/Transcripts/` | this skill | raw transcripts, tagged `RawTranscript`, kept forever |
+| `Meetings/Processed Meetings/` | this skill | clean crosslinked meeting notes, bucketed into `<YYYY>-wk.<WW>/` week subfolders — **the Meetings base** |
+| `Meetings/Transcripts/` | this skill | raw transcripts, tagged `RawTranscript`, bucketed into matching `<YYYY>-wk.<WW>/` week subfolders, kept forever |
 
 Processing **moves** artifacts from `Meetings/Inbox/` into the two permanent
-subfolders. The Meetings base is folder-filtered on
-`file.inFolder("Meetings/Processed Meetings")`; `Meetings/Inbox/` is excluded from
-Templater folder-templates so the sync never triggers a template.
+subfolders, and within each into an **ISO-week subfolder** named
+`<YYYY>-wk.<WW>` (e.g. `2026-wk.29`, the week the meeting happened). The Meetings
+base is folder-filtered on `file.inFolder("Meetings/Processed Meetings")` — a
+recursive path match, so the week subfolders are still indexed. `Meetings/Inbox/`
+is excluded from Templater folder-templates so the sync never triggers a template.
+
+**Computing the week bucket.** From the meeting date (`YYYY-MM-DD`), the bucket is
+`<YYYY>-wk.<WW>` where `<WW>` is the zero-padded ISO week number and `<YYYY>` is
+the note's calendar year. Compute it, e.g.
+`date -j -f "%Y-%m-%d" "2026-07-16" "+%V"` → `29` → `2026-wk.29`. Create the
+subfolder if it doesn't exist. Both the processed note and its transcript go into
+the **same** week bucket (they share the same `Date`).
 
 **Why quarantine the inbox?** Granola keeps re-fetching any meeting still in its
 sync window and re-dumps the raw copy on every sync (~every 30 min), so deleting a
@@ -79,9 +97,9 @@ frontmatter key `granola_id` → `granola_ref`. The plugin's cache never indexes
 `granola_ref`, so the filed copy becomes invisible to the sync and is permanently
 safe. Keep the value unchanged — it is still our dedup key.
 
-**Dedup key = `granola_ref`.** Before processing a raw note, look for a note in
-`Meetings/Processed Meetings/` whose `granola_ref` equals the raw note's
-`granola_id`. If one exists it is already done — delete the re-synced raw note
+**Dedup key = `granola_ref`.** Before processing a raw note, look for a note
+**anywhere under** `Meetings/Processed Meetings/` (search its week subfolders
+recursively) whose `granola_ref` equals the raw note's `granola_id`. If one exists it is already done — delete the re-synced raw note
 (and its raw transcript) from `Meetings/Inbox/` and skip. This is what makes
 re-syncs idempotent: the plugin re-dumps the raw note (with `granola_id`) into
 `Meetings/Inbox/`, and we recognize it as already-filed via the matching
@@ -105,20 +123,29 @@ summary's `granola_id`, `created` (→ meeting date), and its paired transcript 
 the **company/client**, the **project** if any, **URLs/docs**, and **action items**.
 
 ### 2. Resolve & crosslink entities (auto-create missing)
+**Include the user as an attendee whenever he participated.** Granola records from
+the user's account and routinely omits the account owner from the attendee list — he
+shows up as **"You"** in the transcript. So by default add `- "[[Jane Doe]]"`
+to the processed note's `Attendees` (listed **first**), even when Granola's list
+doesn't name him. **Exception:** some notes are imports/shares of meetings the user did
+**not** attend — the tell is a transcript with **no "You" segments** (all speakers
+are named/"Guest"). In that case do **not** add him; instead note in the body that
+the user was not an attendee (so his own action-item weighting in step 5 is skipped).
+
 For each attendee, company, and project:
 - If a note already exists (match by basename), link it.
 - If not, **create it** per `obsidian-base-cleanup`: people under
-  `People/<Company>/` (colleagues at your own company → `People/<YourCompany>/`; external → their
+  `People/<Company>/` (your own colleagues → `People/<your company>/`; external → their
   own company, creating a `Company`-tagged note if needed; prospective hires or
   unaffiliated contacts → `Company: External`, `People/External/`), projects under
   `Projects/<Company>/`. Fill only what the meeting honestly tells you; leave the
   rest blank.
 - A person's `Company` is their employer, inferred from email domain or context
-  (`@amazon.com` → AWS, `@yourco.com` → your own company). "Sales team" and other group labels
+  (`@amazon.com` → AWS, your own domain → your own company). "Sales team" and other group labels
   are not people — don't link or create them.
 
 **Also crosslink people named in the body, not just attendees.** Granola's
-summaries mention colleagues and contacts in prose (e.g. "Julian will…", "per
+summaries mention colleagues and contacts in prose (e.g. "Alex will…", "per
 Helena"). Scan the summary for every **person** named beyond the attendees and,
 for each one you can confidently identify, resolve or **create** their note the
 same way (matching an existing note by basename first — mind transcription
@@ -130,11 +157,13 @@ names and fleeting one-off mentions you can't place. New *companies/projects*
 named in passing are only worth creating when they're clearly a real, relevant
 entity — otherwise leave them as prose.
 
-### 3. File Granola's summary note into `Meetings/Processed Meetings/`
-Create `Meetings/Processed Meetings/<YYYYMMDD> <title>.md` — **date-prefix the
-filename** with the meeting date (Granola's `created`, digits only, e.g.
-`20260521 GTM session.md`) so the Meetings base sorts and reads chronologically.
-The wikilink target is therefore the prefixed basename (`[[20260521 GTM session]]`),
+### 3. File Granola's summary note into `Meetings/Processed Meetings/<YYYY>-wk.<WW>/`
+Create `Meetings/Processed Meetings/<YYYY>-wk.<WW>/<YYYYMMDD> <title>.md` — file it
+into the meeting's **ISO-week subfolder** (see "Computing the week bucket" above;
+create it if missing) and **date-prefix the filename** with the meeting date
+(Granola's `created`, digits only, e.g. `2026-wk.21/20260521 GTM session.md`) so the
+Meetings base sorts and reads chronologically. The wikilink target is folder-
+independent — still the prefixed basename (`[[20260521 GTM session]]`),
 and the paired transcript's `Meeting:` back-link must use it. Give it clean,
 vault-shaped frontmatter, then **Granola's note body verbatim** (this is a
 move-and-relabel, never a rewrite — Granola's summary IS the meeting record), then
@@ -153,17 +182,19 @@ Project: "[[Widget]]"       # or plain blank; never wikilink "General task"
 Links:                      # any doc/ticket URLs mentioned
   - https://notes.granola.ai/t/...
 Transcript: "[[<title>-transcript]]"
-granola_ref: 912d64fe-...    # renamed from granola_id so the sync can't reclaim this note; our dedup key. Drop Granola's title/type/created/updated
+granola_ref: 0f1e2d3c-...    # renamed from granola_id so the sync can't reclaim this note; our dedup key. Drop Granola's title/type/created/updated
 ---
 ```
 
 Do **not** carry over an `updated`/`Updated` field — it is intentionally not part
 of the Meetings base.
 
-### 4. File the transcript into `Meetings/Transcripts/`
+### 4. File the transcript into `Meetings/Transcripts/<YYYY>-wk.<WW>/`
 Move the paired transcript from `Meetings/Inbox/` to
-`Meetings/Transcripts/<title>-transcript.md` (transcripts are **not** date-prefixed
-— only the processed note in the Meetings base is), keeping its body verbatim, with
+`Meetings/Transcripts/<YYYY>-wk.<WW>/<title>-transcript.md` — the **same** week
+subfolder as its processed note (create it if missing). Transcript filenames are
+**not** date-prefixed (only the processed note in the Meetings base is); the week
+subfolder gives them the chronological grouping. Keep its body verbatim, with
 frontmatter: `tags: [RawTranscript]`, `Date:` = the same meeting date as the note,
 `Meeting: "[[<YYYYMMDD> <title>]]"` back-link (the date-prefixed note basename), and
 its `granola_id` **renamed to `granola_ref`** (same reason as the note — otherwise
@@ -179,30 +210,46 @@ The transcript is stored for reference only — **never mine it for tasks**
 (auto-transcription is too noisy to be a reliable source of commitments; Granola's
 summary is the curated record of what was actually agreed).
 
-### 6. Turn the USER'S OWN action items into Tasks
-Only items **the user** owns become Tasks ("I'll…", "<user> will…", assigned to
-the user). If the user was not even an attendee, none are theirs — create no tasks
-and say so. For each of the user's items, create a Task per `obsidian-create-task`:
-- Next free `Task Number` (scan `Tasks/**`), `Status: Not Started`.
-- `Project`/`Company` inherited from the meeting (plain `General task` if none).
-- `Stakeholders`: the other people tied to that item.
-- `Due Date`: resolve relative dates against the meeting date / today; else blank.
-- `Links`: any URL; and `Notes: From [[<processed meeting basename>]]` (the
-  processed note's basename is date-prefixed — see step 3).
+### 6. Propose the USER'S OWN action items as tasks (do NOT create them yet)
+Only items **the user** owns are task candidates ("I'll…", "the user will…", assigned to
+the user). the user is always an attendee (step 2), so always weigh the action items for
+his own. **"Note-taker" (or "notetaker") in a Granola summary means the user** — he owns
+the recording account — so any action assigned to the note-taker is his. For each of
+the user's items, work out the full task shape per `obsidian-create-task`
+(title, `Project`/`Company` inherited from the meeting with plain `General task` if
+none, `Stakeholders` = the other people on the item, `Due Date` resolved against the
+meeting date / today or blank, `Links`, and
+`Notes: From [[<processed meeting basename>]]`), then **stop**. Nothing is written to
+`Tasks/Task Notes/` until step 6b.
+
+In `## Action items`, render the user's candidates as **plain** unchecked bullets
+suffixed `(proposed task, pending validation)`, never as `[[wikilinks]]`, since the
+task note doesn't exist yet and would be a broken link. Others' items stay plain
+bullets naming the owner.
+
+### 6b. Validate, then create
+Run the validation gate below. Only the items the user approves become Task notes:
+- Assign the **next free `Task Number`** at creation time (re-scan `Tasks/**`;
+  never reuse a number projected earlier if the vault moved on), `Status: Not Started`.
 - File flat into `Tasks/Task Notes/` (no per-project subfolders). No kanban step —
   the boards are TaskNotes views over the `Status` property and pick the task up
   automatically.
+- Back-fill `## Action items` in the processed note: each created task's bullet
+  becomes `- [ ] [[Task title]]`. A rejected proposal keeps a plain bullet with
+  `(not tracked as a task)`; the action item stays in the record either way.
 
-In `## Action items`, render the user's items as task links (`- [ ] [[Task title]]`)
-and others' as plain bullets naming the owner.
+If the gate can't be resolved on this run (unattended scan, or the user doesn't answer),
+the proposals go to the staging queue and the meeting stays fully filed with its
+`(proposed task, pending validation)` bullets. That is a complete, valid end state.
 
 ### 7. Write the `## People mentioned` section
 After `## Action items`, append `## People mentioned` — a bullet list of `[[Person]]`
 wikilinks for everyone **named in the body who is not already an attendee** (attendees
 are already linked in frontmatter, so don't repeat them). This backlinks the meeting
-onto each person's note without touching Granola's verbatim body — it's the payoff of
-the step-2 crosslinking. One bullet per person; add a few words of context where it
-helps (`- [[Rulian]] — keen to take the bio proposal-review role`). If nobody beyond
+onto each person's note. (Correcting an obvious ASR name typo in the body — per the
+Judgment & safety exception — is the only editing allowed; otherwise the body stays
+verbatim.) It's the payoff of the step-2 crosslinking. One bullet per person; add a few words of context where it
+helps (`- [[Alex Reed]] — keen to take the proposal-review role`). If nobody beyond
 the attendees is named, write `- None.`
 
 ### 8. Clean the inbox & verify
@@ -210,29 +257,120 @@ Delete the raw note from `Meetings/Inbox/` (its content now lives in
 `Meetings/Processed Meetings/`; this avoids a basename collision and keeps the inbox
 to only unprocessed items). Run the broken-wikilink check from
 `obsidian-base-cleanup`: note→attendees, note→company/project, note↔transcript,
-note→mentioned-people, and task↔note links must all resolve. Then summarize:
-attendees linked, people/entities created, transcript filed, and which action items
-became tasks (numbers) vs. left as context.
+note→mentioned-people, and task↔note links must all resolve. Pending proposals are
+plain text, not wikilinks, so they can't break the check; if you see a
+`- [ ] [[Task title]]` bullet whose note doesn't exist, a task was approved but never
+written. Then summarize: attendees linked, people/entities created, transcript filed,
+and which action items were **proposed** as tasks (awaiting validation, or staged) vs.
+left as context. Report created tasks with their real numbers only once they exist.
+
+## The validation gate
+
+Meeting-derived tasks are **proposals until the user says otherwise**. Extraction from a
+summary is a judgment call (an owner can be misread, a "we should maybe" can look like
+a commitment, one item can split into three), so the user reviews the list before it
+lands in the Tasks base. This gate applies to **METHOD 2 only**: tasks the user asks for
+directly (`obsidian-create-task`, METHOD 1) are already validated by the asking.
+
+### Presenting the proposals (interactive runs)
+
+After filing the meeting(s), report the extraction in this exact shape, one block per
+meeting, blocks separated by a blank line:
+
+```
+I extracted these tasks from [[20260716 GTM session]]:
+
+* #412 - Send the migration outreach to Sarah Chen (AWS, due 2026-08-04)
+* #413 - Draft the migration offering one-pager (Migration Offering)
+
+I extracted these tasks from [[20260717 Acme sync]]:
+
+* #414 - Review the benchmark report
+
+Approve all, or tell me which to drop or edit.
+```
+
+- `#XXX` is the **projected** `Task Number`: current highest across `Tasks/**` plus
+  one, incrementing down the list, continuing across meetings in the batch. It is a
+  handle for the conversation, not a reservation. Re-derive the real number when you
+  actually create the note, and if it shifted, report the number you assigned.
+- The bullet is `* #XXX - <Task title>`. Append only the metadata that exists, in
+  parentheses, comma-separated: company or project, `due YYYY-MM-DD`, stakeholders if
+  they add signal. Blank fields are simply absent. No metadata at all is fine.
+- One bullet per task, one block per meeting, even for a single task or a single
+  meeting. A meeting that yielded none gets no block; say so in one line
+  (`No tasks for me out of [[20260718 standup]].`).
+- Then **wait**. Do not create anything in the same turn as the proposal.
+
+### Reading the answer
+
+- Blanket yes ("approve", "all good", "go ahead", "yes") → create every proposal.
+- Selective ("drop 2", "not #413", "just the first one") → create the rest, delete
+  the dropped ones.
+- Edits ("#412 is due Friday", "retitle 413 to X", "that one is General task") →
+  apply, then create. Re-show the corrected list only if the edits were substantial.
+- Silence or a topic change → nothing is created; stage the proposals (below).
+- **Never infer approval** from a message that only discusses the meeting, and never
+  treat approval of one meeting's block as covering another's.
+
+### Staging (unattended runs)
+
+An unattended run (the auto-scan, or any run with nobody to ask) files the meeting
+normally, then appends one block per meeting to `Tasks/Pending/Proposed Tasks.md`:
+
+```markdown
+### From [[20260716 GTM session]] (staged 2026-07-29)
+- **Send the migration outreach to Sarah Chen**
+  - Project: [[Migration Offering]] · Company: [[AWS]]
+  - Stakeholders: [[Sarah Chen]], [[John Smith]]
+  - Due Date: 2026-08-04
+  - Links:
+  - Notes: From [[20260716 GTM session]]
+```
+
+Store no `Task Number` (it would go stale). Omit or leave blank any field the meeting
+didn't give you. That note is **untagged** so it stays out of the Tasks base, the
+kanban boards, and the rundown; keep it that way. The daily rundown flags a non-empty
+queue, and any later interactive run reads the queue back in the format above (mixing
+freshly-extracted blocks and staged ones, projected numbers computed at read-back).
+On approval, create the task and **delete its block** from the queue; on rejection,
+delete the block and mark the meeting's action-item bullet `(not tracked as a task)`.
+An empty queue means the file ends after its header comment.
 
 ## Automatic processing (the auto-scan)
 A local scheduled task (`obsidian-process-meetings` in `~/.claude/scheduled-tasks/`)
 runs periodically and processes new meetings unprompted. It scans `Meetings/Inbox/`
 (`Meetings/Inbox/*.md`, skipping `README.md`), dedups against
-`Meetings/Processed Meetings/` by matching `granola_ref` to each raw note's
-`granola_id`, and runs this workflow on anything not yet filed — moving finished
-notes/transcripts out of the inbox so the next Granola sync can't overwrite them.
+`Meetings/Processed Meetings/` (recursively, across week subfolders) by matching
+`granola_ref` to each raw note's `granola_id`, and runs this workflow on anything
+not yet filed — moving finished notes/transcripts out of the inbox and into their
+`<YYYY>-wk.<WW>/` buckets so the next Granola sync can't overwrite them.
 Transcript-only meetings (no `type: note` file yet) are left alone; they get
 picked up on a later pass once Granola's summary has synced.
+It **never creates Task notes** (nobody is there to validate): it stages its task
+proposals in `Tasks/Pending/Proposed Tasks.md` per the validation gate above.
 
 ## Judgment & safety
 - **Never rewrite a note or transcript body.** Copy it verbatim; only add
   vault-shaped frontmatter + an `## Action items` section. Never substitute your
   own summary for Granola's — if the summary hasn't synced yet, wait.
+  - **One exception — obvious ASR typos in proper nouns.** You may correct clear
+    transcription manglings of names — people, companies, projects, events,
+    products — in the summary body to their known-correct spelling (e.g.
+    a mis-heard company name, a colleague's name spelled phonetically, an
+    acronym heard wrong). Only when
+    the correct entity is unambiguous; never rephrase content, fix "regular" prose,
+    or change meaning. If unsure, leave it and flag it. The transcript stays fully
+    verbatim — correct names only in the summary body.
 - **Move, don't leave copies in the inbox** — a leftover raw note in
   `Meetings/Inbox/` with the same basename as the filed one breaks wikilink
   resolution.
 - Distinguish a real **CTA/action item** from mere discussion — don't manufacture
   tasks from every sentence.
+- **Never write a Task note from a meeting without the user's explicit sign-off.** Filing
+  the meeting is unconditional; creating tasks is not. When in doubt, propose or stage.
+  Over-proposing is cheap (he drops a line); a task he never agreed to pollutes the
+  base, the kanban, and the rundown.
 - Prefer a blank property over an invented value; don't guess a due date or owner.
 - Task `Status` frontmatter is the single source of truth (new tasks start
   `Not Started`); the kanban boards are TaskNotes views and update themselves.

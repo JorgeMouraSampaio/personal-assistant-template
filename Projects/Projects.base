@@ -16,3 +16,5 @@ views:
       - End Date
       - Status
       - Link
+    columnSize:
+      note.Company: 140

@@ -20,6 +20,12 @@ task notes in the Tasks base. Read the `obsidian-base-cleanup` skill for the
 wider vault model (tags, wikilink quoting, `People/<Company>/` folders) — this
 skill assumes it.
 
+**No validation gate here.** Asking for a task IS the validation, so METHOD 1
+creates the note straight away. Tasks mined from a meeting (METHOD 2,
+`obsidian-process-meeting`) are different: they are proposed to the user and only
+written once he signs off. That skill owns the gate; this one is the schema and
+numbering it borrows.
+
 ## Task note schema
 
 Tasks are notes tagged `Task`, all filed **flat in `Tasks/Task Notes/`** — there
@@ -41,6 +47,9 @@ Stakeholders:                # list of "[[Person]]" links (people mentioned)
 Company: "[[Acme]]"          # "[[Company]]" wikilink, or blank
 Created Date: 2026-01-01     # today, unquoted ISO date
 Due Date:                    # ISO date if one is implied, else blank
+Priority:                    # High | Medium | Low — optional, blank unless the user signals importance
+Effort:                      # estimated minutes, multiples of 15 (15,30,45,…); blank if unknown
+Booked ?: N                  # Y once a calendar slot is booked for it, else N (default N)
 Notes: free text (may contain [[links]])
 Links:                       # URL(s) mentioned for the task (doc, ticket, etc.), else blank
 ---

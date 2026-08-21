@@ -21,4 +21,7 @@ views:
       - property: file.name
         direction: ASC
     columnSize:
-      note.Role: 131
+      file.name: 203
+      note.Division: 142
+      note.Role: 153
+      note.LinkedIn: 136

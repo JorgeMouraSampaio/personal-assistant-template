@@ -15,6 +15,12 @@ properties:
     displayName: Created Date
   note.Due Date:
     displayName: Due Date
+  note.Priority:
+    displayName: Priority
+  note.Effort:
+    displayName: Effort (min)
+  note.Booked ?:
+    displayName: Booked ?
   note.Notes:
     displayName: Notes
   note.Links:
@@ -32,6 +38,9 @@ views:
       - Project
       - Created Date
       - Due Date
+      - Priority
+      - Effort
+      - Booked ?
       - Stakeholders
       - Company
       - Notes
@@ -40,6 +49,7 @@ views:
       - property: Task Number
         direction: ASC
     columnSize:
+      note.Task Number: 106
       file.name: 457
   - type: tasknotesKanban
     name: Project Board
@@ -54,6 +64,9 @@ views:
       - file.name
       - Status
       - Due Date
+      - Priority
+      - Effort
+      - Booked ?
       - Stakeholders
     options:
       columnWidth: 260
@@ -69,6 +82,9 @@ views:
       - Task Number
       - Status
       - Due Date
+      - Priority
+      - Effort
+      - Booked ?
       - Stakeholders
     sort:
       - property: Task Number

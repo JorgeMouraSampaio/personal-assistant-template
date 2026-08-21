@@ -1,0 +1,55 @@
+properties:
+  file.name:
+    displayName: Resource
+  note.Title:
+    displayName: Title
+  note.Type:
+    displayName: Type
+  note.Author:
+    displayName: Author
+  note.Company:
+    displayName: Company
+  note.Project:
+    displayName: Project
+  note.Date:
+    displayName: Date
+  note.Link:
+    displayName: Link
+  note.Note:
+    displayName: Note
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.hasTag("Resource")
+    order:
+      - file.name
+      - Type
+      - Author
+      - Company
+      - Project
+      - Date
+      - Link
+      - Note
+    sort:
+      - property: Date
+        direction: DESC
+    columnSize:
+      file.name: 320
+      note.Author: 150
+  - type: table
+    name: Project Resources
+    filters:
+      and:
+        - file.hasTag("Resource")
+        - file.hasLink(this.file)
+    order:
+      - file.name
+      - Type
+      - Author
+      - Date
+      - Link
+    sort:
+      - property: Date
+        direction: DESC

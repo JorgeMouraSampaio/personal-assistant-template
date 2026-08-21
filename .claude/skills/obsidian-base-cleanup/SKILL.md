@@ -29,6 +29,7 @@ tag — **the tag is load-bearing, never drop it**); Meetings is filtered by fol
 |---|---|---|---|
 | People | `People/<Company>/` | tag `People` | `Company`, `Division`, `Role`, `Email`, `LinkedIn`, `Notes` |
 | Companies | `Companies/` | tag `Company` | `Division`, `Stakeholders`, `Projects`, `Notes` |
+| Projects | `Projects/<Company>/` | tag `Project` | `Project Number` (quoted, one global sequence, template auto-assigns `max+1`), `Company`, `Division` (your own company only: internal/personal), `Start/End Date`, `Status`, `Link` |
 | Projects | `Projects/<Company>/` | tag `Project` | `Company`, `Start Date`, `End Date`, `Status`, `Link` |
 | Tasks | `Tasks/Task Notes/` (flat) | tag `Task` | `Task Number`, `Status`, `Project`, `Stakeholders`, `Company`, `Created/Due Date`, `Notes`, `Links` (see `obsidian-create-task`) |
 | Meetings | `Meetings/Processed Meetings/` | folder `file.inFolder("Meetings/Processed Meetings")` | `Date`, `Attendees`, `Company`, `Project`, `Links`, `Transcript` |
@@ -147,6 +148,16 @@ People whose `Company` is the user's own org (or any company without a division
 breakdown) leave `Division` blank. When cleaning up, read the company handbook's
 "how it's structured" / "people" sections — that's the source of truth for both
 the division list and each person's division.
+
+**Your own company's projects are the one place `Division` is used on a project
+note.** Every project whose `Company` is your own company (say `Acme`) must also
+carry `Division: internal` or `Division: personal` (the company's own internal
+initiatives vs. your personal projects), so the Projects base reads them as
+"Acme [internal]" / "Acme [personal]". Never leave one of those projects with no
+`Division`. This classifier reuses the `Division` property name but is separate
+from the People division taxonomy (Engineering/Sales/etc.), and client projects
+don't set it. `Templates/Project.md` holds the company name in `OWN_COMPANY`; set
+it to `""` to switch the whole rule off.
 
 ## How linking works (the crucial detail)
 
