@@ -35,16 +35,34 @@ this vault ships with.
 - **Fallback window:** the rest of the working day, `09:00–18:00`. Used only when
   the Work Block cannot take the task. A day with no Work Block is still bookable
   through the fallback.
-- **Event title:** exactly `Task #<Task Number>` (e.g. `Task #90`). Never put the
-  task name anywhere on the event. **Fully opaque:** empty description, no
-  location, no attendees, no link. The title is the only content.
+- **Event title:** exactly `Task #<Task Number>` (e.g. `Task #90`). The task name
+  never goes in the title.
+- **Event description:** always filled, so the user can read what the slot is for
+  from the calendar alone. Plain text, this shape:
+
+  ```
+  <Task title>
+  Due: YYYY-MM-DD (Ddd) · <container> · Priority <High/Medium/Low>
+  Effort: <n> min
+
+  <Notes, with [[wikilinks]] flattened to plain names>
+
+  Links: <the task's Links URLs, one per line>
+  Open in Obsidian: obsidian://open?vault=personal-assistant&file=Tasks%2FTask%20Notes%2F<URL-encoded title>
+  ```
+
+  Drop any line whose value is blank (no due date, no priority, no Notes, no
+  Links). The container is the `Project`, else the `Initiative`, same as the
+  rundown. Keep the Notes text as written; do not summarise or add to it.
+  No location, no attendees.
 
 ## What counts (task selection)
 
 Scan every `Tasks/Task Notes/*.md` tagged `Task`. A task is **eligible** to book
 when ALL hold:
 
-- `Status` is `Not Started` or `In Progress` (never `Completed`/`Discarded`).
+- `Status` is `Not Started` or `In Progress` (never `Blocked`, `Completed` or
+  `Discarded`: a Blocked task waits on someone else, so a slot would sit idle).
 - `Effort` is set to a positive number of minutes (a multiple of 15). This is the
   slot length. **Blank Effort ⇒ not bookable**: collect these and report them at
   the end as "needs an Effort estimate", never guess one.
@@ -126,7 +144,7 @@ Tue 2026-07-21  (Work Block 10:00–12:00, free 10:15–12:00)
   11:20–11:35  Task #79  Sync with Alex on template versioning    (due 07-21)
   14:30–15:30  Task #80  Draft the Q3 pitch deck ...              (due 07-22) [outside Work Block]
 Wed 2026-07-22  (Work Block 10:00–12:00, free 10:30–12:00)
-  10:30–10:40  Task #88  Confirm the kickoff date with Acme ...   (due 07-21) ⚠ late
+  10:30–10:40  Task #88  Confirm Ines + Pedro ready ...          (due 07-21) ⚠ late
   ...
 Not booked (needs Effort): #20, #66
 Not booked (no capacity in horizon): none
@@ -135,8 +153,8 @@ Not booked (no capacity in horizon): none
 Mark every tier B slot `[outside Work Block]` so the user can see at a glance
 which bookings left the Work Block, and why (the Work Block was full or absent).
 
-Show the task name in the **preview** (so the user can sanity-check) even though
-it never touches the calendar event. On explicit "go"/"yes"/"book it", proceed.
+Show the task name in the **preview** (so the user can sanity-check). It goes in
+the event description, never in the title. On explicit "go"/"yes"/"book it", proceed.
 If the user edits the plan ("move #90 to Wednesday", "skip #74"), re-plan and
 re-preview.
 
@@ -145,8 +163,8 @@ re-preview.
 For each planned slot, in order:
 
 1. `create_event` on `you@example.com`: `summary: "Task #<n>"`,
-   `startTime`/`endTime` as ISO 8601 with `timeZone: Europe/Lisbon`, no
-   description, no attendees.
+   `startTime`/`endTime` as ISO 8601 with `timeZone: Europe/Lisbon`,
+   `description` built as in Fixed configuration, no attendees.
 2. Set that task note's `Booked ?` frontmatter to `Y` (exact-match the `Booked ?:`
    line; change nothing else, never touch `Status`, `Effort`, `Due Date`, etc.).
 
@@ -178,8 +196,9 @@ else.
   a slot that starts in the past. Booking outside the Work Block is allowed and
   expected once the Work Block is full or absent; booking over a **blocker** never
   is, unless the user explicitly asks for that one slot.
-- **Never** put the task name (or any detail) on the event; title is `Task #<n>`,
-  description empty.
+- The title is always `Task #<n>` and nothing else. The description always
+  carries the readable task detail. This holds for one-off bookings of a single
+  task too, not only bulk "book my tasks" runs.
 - **Never** split a task across gaps/days, and never resize a task to fit (Effort
   is fixed; if it does not fit anywhere in the horizon, leave it unbooked).
 - Task notes: only ever flip `Booked ?`. This skill is otherwise read-only with

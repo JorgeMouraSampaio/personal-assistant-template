@@ -1,11 +1,12 @@
 <%*
 // New project: pick its company, set Company as a wikilink, seed dates,
-// and file the note under Projects/<Company>/. The body is the project
-// DASHBOARD: overview + the "Project …" views of the master Tasks/Meetings/
-// Sessions bases, embedded by reference. Those views filter on `this.file`
-// (= this project note), so anything whose frontmatter links to the project
-// shows up automatically — and the layout is maintained centrally in the
-// master .base files, not per note.
+// and file the note under Projects/Client projects/<Company>/ (or
+// Projects/Internal projects/ when the company is your own). The body is the
+// project DASHBOARD: overview + the "Project …" views of the master Tasks/
+// Meetings/Sessions/Resources bases, embedded by reference. Those views filter
+// on `this.file` (= this project note), so anything whose frontmatter links to
+// the project shows up automatically — and the layout is maintained centrally
+// in the master .base files, not per note.
 const companyFiles = app.vault.getMarkdownFiles()
   .filter(f => f.path.startsWith("Companies/") && f.basename !== "Company Base");
 const names = companyFiles.map(f => f.basename).sort();
@@ -34,10 +35,19 @@ if (OWN_COMPANY && company === OWN_COMPANY) {
 }
 const divisionLine = division ? `Division: ${division}\n` : "";
 
+// A project may sit under an initiative (open-ended container). Optional.
+const initFiles = app.vault.getMarkdownFiles().filter(f => f.path.startsWith("Initiatives/"));
+const initNames = initFiles.map(f => f.basename).sort();
+const initiative = initNames.length
+  ? (await tp.system.suggester(["— none —", ...initNames], ["", ...initNames], false, "Initiative? (optional)")) ?? ""
+  : "";
+
 const status = (await tp.system.prompt("Status? (optional)", "", false)) ?? "";
 const link = (await tp.system.prompt("Link? (optional)", "", false)) ?? "";
 const start = tp.date.now("YYYY-MM-DD");
-const end = tp.date.now("YYYY-MM-DD", 90);
+// Every project needs a TARGET end date. Ask for it rather than inventing one;
+// the +90d value is only a pre-filled suggestion, and blank is better than wrong.
+const end = (await tp.system.prompt("Target end date? (YYYY-MM-DD)", tp.date.now("YYYY-MM-DD", 90), false)) ?? "";
 
 let name = tp.file.title;
 if (name.startsWith("Untitled")) name = (await tp.system.prompt("Project title?", "", false)) || name;
@@ -47,17 +57,24 @@ tags:
   - Project
 Project Number: "${number}"
 Company: "[[${company}]]"
-${divisionLine}Start Date: ${start}
+${divisionLine}Initiative: ${initiative ? `"[[${initiative}]]"` : ""}
+Start Date: ${start}
 End Date: ${end}
 Status: ${status}
+Stakeholders:
+Related Tasks:
 Link: ${link}
+Slack Channels:
+Slack DMs:
 ---
 ## Overview
 
 
 ## Tasks
 
-![[All Tasks.base#Project Board]]
+![[All Tasks.base#Project Table]]
+
+## Milestones
 
 ## Meetings
 
@@ -75,7 +92,9 @@ Link: ${link}
 
 `;
 
-const folder = "Projects/" + company;
+const folder = (OWN_COMPANY && company === OWN_COMPANY)
+  ? "Projects/Internal projects"
+  : "Projects/Client projects/" + company;
 if (!app.vault.getAbstractFileByPath(folder)) await app.vault.createFolder(folder);
 await tp.file.move(folder + "/" + name);
 %>

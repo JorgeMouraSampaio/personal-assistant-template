@@ -1,21 +1,32 @@
 <%*
-// New task. Pick a project (or "General task"); company is inherited
-// from the project. Task Number auto-increments to the next whole number.
-// Rundown notes and the pending-proposal queue are generated fully-formed:
-// never template them.
+// New task. Pick a container: a project, an initiative, or "General task".
+// Company is inherited from whichever was picked. Task Number auto-increments
+// to the next whole number. Rundown notes and the pending-proposal queue are
+// generated fully-formed: never template them.
 if (tp.file.path(true).startsWith("Tasks/Rundowns/")) return;
 if (tp.file.path(true).startsWith("Tasks/Pending/")) return;
 const projFiles = app.vault.getMarkdownFiles()
   .filter(f => f.path.startsWith("Projects/"));
+const initFiles = app.vault.getMarkdownFiles()
+  .filter(f => f.path.startsWith("Initiatives/"));
 const projNames = projFiles.map(f => f.basename).sort();
-const project = await tp.system.suggester(
-  ["— General task —", ...projNames], ["General task", ...projNames], false, "Project?");
-if (project === null) return;
+const initNames = initFiles.map(f => f.basename).sort();
+// Initiatives are prefixed in the picker only; the stored value is the basename.
+const choice = await tp.system.suggester(
+  ["— General task —", ...projNames.map(n => `Project: ${n}`), ...initNames.map(n => `Initiative: ${n}`)],
+  ["General task", ...projNames.map(n => `P:${n}`), ...initNames.map(n => `I:${n}`)],
+  false, "Project or initiative?");
+if (choice === null) return;
 
-let company = "";
-if (project !== "General task") {
-  const pFile = projFiles.find(f => f.basename === project);
-  const cv = pFile ? app.metadataCache.getFileCache(pFile)?.frontmatter?.Company : null;
+let project = "", initiative = "", company = "";
+if (choice === "General task") {
+  project = "General task";
+} else {
+  const isInit = choice.startsWith("I:");
+  const name = choice.slice(2);
+  if (isInit) initiative = name; else project = name;
+  const f = (isInit ? initFiles : projFiles).find(f => f.basename === name);
+  const cv = f ? app.metadataCache.getFileCache(f)?.frontmatter?.Company : null;
   if (cv) company = String(cv).replace(/\[\[|\]\]/g, "").trim();
 }
 
@@ -47,7 +58,8 @@ tags:
   - Task
 Task Number: "${number}"
 Status: Not Started
-Project: ${project === "General task" ? "General task" : `"[[${project}]]"`}
+Project: ${project === "General task" ? "General task" : (project ? `"[[${project}]]"` : "")}
+Initiative: ${initiative ? `"[[${initiative}]]"` : ""}
 Stakeholders:
 Company: ${company ? `"[[${company}]]"` : ""}
 Created Date: ${created}
@@ -59,8 +71,8 @@ Notes:
 Links: ${link}
 ---
 `;
-// All task notes live flat in Tasks/Task Notes/; the Project property (not the
-// folder) is what the Tasks base organizes by.
+// All task notes live flat in Tasks/Task Notes/; the Project / Initiative
+// property (not the folder) is what the Tasks base organizes by.
 const folder = "Tasks/Task Notes";
 if (!app.vault.getAbstractFileByPath(folder)) await app.vault.createFolder(folder);
 await tp.file.move(folder + "/" + name);

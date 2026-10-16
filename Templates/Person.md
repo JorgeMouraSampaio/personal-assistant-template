@@ -36,7 +36,7 @@ Division: ${division}
 Role: ${role}
 Email: ${email}
 LinkedIn: ${linkedin}
-Notes: ${notes}
+Notes: ${notes ? JSON.stringify(notes) : ""}
 ---
 `;
 

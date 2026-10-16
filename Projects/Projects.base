@@ -1,6 +1,10 @@
 properties:
   note.Company:
     displayName: Company
+  note.Initiative:
+    displayName: Initiative
+  note.Related Tasks:
+    displayName: Related Tasks
   file.name:
     displayName: Title
 views:
@@ -9,6 +13,40 @@ views:
     filters:
       and:
         - file.hasTag("Project")
+    order:
+      - file.name
+      - Company
+      - Initiative
+      - Start Date
+      - End Date
+      - Status
+      - Related Tasks
+      - Link
+    columnSize:
+      note.Company: 140
+  - type: table
+    name: Initiative Internal Projects
+    filters:
+      and:
+        - file.hasTag("Project")
+        - file.hasLink(this.file)
+        - file.inFolder("Projects/Internal projects")
+    order:
+      - file.name
+      - Company
+      - Start Date
+      - End Date
+      - Status
+      - Link
+    columnSize:
+      note.Company: 140
+  - type: table
+    name: Initiative Client Projects
+    filters:
+      and:
+        - file.hasTag("Project")
+        - file.hasLink(this.file)
+        - file.inFolder("Projects/Client projects")
     order:
       - file.name
       - Company

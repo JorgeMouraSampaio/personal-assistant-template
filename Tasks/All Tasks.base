@@ -1,3 +1,5 @@
+formulas:
+  Initiative: if(note.Initiative, note.Initiative, if(file(note.Project), file(note.Project).properties.Initiative, ""))
 properties:
   file.name:
     displayName: Title
@@ -7,6 +9,10 @@ properties:
     displayName: Status
   note.Project:
     displayName: Project
+  note.Initiative:
+    displayName: Initiative
+  formula.Initiative:
+    displayName: Initiative
   note.Stakeholders:
     displayName: Stakeholders
   note.Company:
@@ -36,6 +42,7 @@ views:
       - file.name
       - Status
       - Project
+      - formula.Initiative
       - Created Date
       - Due Date
       - Priority
@@ -47,6 +54,8 @@ views:
       - Links
     sort:
       - property: Task Number
+        direction: ASC
+      - property: formula.Initiative
         direction: ASC
     columnSize:
       note.Task Number: 106
@@ -88,4 +97,26 @@ views:
       - Stakeholders
     sort:
       - property: Task Number
+        direction: ASC
+  - type: table
+    name: Initiative Table
+    filters:
+      and:
+        - file.hasTag("Task")
+        - note.Initiative == this
+        - note.Status != "Discarded"
+    groupBy:
+      property: Status
+      direction: ASC
+    order:
+      - file.name
+      - Task Number
+      - Status
+      - Due Date
+      - Priority
+      - Effort
+      - Booked ?
+      - Stakeholders
+    sort:
+      - property: Due Date
         direction: ASC

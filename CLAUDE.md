@@ -1,261 +1,341 @@
-# Personal Assistant Vault — guide for Claude
+# Personal Assistant Vault: guide for Claude
 
-A lightweight CRM + project/task system built on Obsidian **Bases** (table views
-over notes), **Templater** (note scaffolding + auto-filing), and the **TaskNotes**
-plugin (drag-drop kanban views over task notes). Follow the conventions below.
-The skills carry the full procedures — read the relevant one before non-trivial
-work:
+A lightweight CRM plus a project and task system, built on three Obsidian
+plugins:
 
-- `.claude/skills/obsidian-base-cleanup/SKILL.md` — entities, crosslinking,
-  folders, divisions, Templater, Meetings/Granola.
-- `.claude/skills/obsidian-create-task/SKILL.md` — natural-language → tasks
-  (task-entry METHOD 1).
-- `.claude/skills/obsidian-process-meeting/SKILL.md` — a Granola/meeting note in
-  `Meetings/` → crosslinked note + task proposals the user validates before they become
-  tasks (task-entry METHOD 2).
-- `.claude/skills/obsidian-log-session/SKILL.md` — user finishes a work session →
-  session note in `Sessions/<Project>/` (what was done, decisions, task statuses).
-- `.claude/skills/obsidian-daily-rundown/SKILL.md` — daily digest of open tasks
-  by due date → `Tasks/Rundowns/YYYY-MM-DD Rundown.md` (a scheduled task runs it
-  every day at 9am; also on demand: "what's on my plate today").
-- `.claude/skills/obsidian-book-tasks/SKILL.md` — book eligible tasks (Effort set,
-  `Booked ? = N`) into calendar slots, sized by Effort, ordered by due date then
-  priority. Prefers the daily `Work Block` (10:00–12:00) and falls back to any
-  other free gap in the working day (09:00–18:00) when the Work Block is full or
-  absent; on demand only ("book my tasks"), previews then flips `Booked ?` to `Y`.
-- `.claude/skills/obsidian-process-resource/SKILL.md` — a Web Clipper clipping in
-  `raw/` → structured Resource note (Resources base) + LLM-owned `wiki/` pages
-  ("process my resources" / "compile"; a scheduled task also auto-scans `raw/`).
+- **Bases**: table views over notes.
+- **Templater**: note scaffolding and auto-filing.
+- **TaskNotes**: drag-drop kanban views over task notes.
 
-## Writing style
+This file holds the schema and the always-on rules. The **skills hold the
+procedures.** Read the relevant skill before doing the work. Do not rely on this
+file for step-by-step detail.
 
-All responses and output content (drafted messages, note bodies, summaries, chat
-replies) must follow ASD-STE100-style English: plain, easy to read, for the
-spoken voice. Concretely, avoid:
+## Skills: which one to read
 
-- Em dashes (`—`). Use commas, colons, parentheses, or separate sentences
-  instead. (En dashes in date/number ranges like `500M/3B` or `Aug 17–Nov 1`
-  are fine.)
-- Antithesis, contrasting pairs, negative parallelisms, and negative anaphoras
-  (e.g. "It's not X, it's Y" repeated or echoed structures built on contrast).
-- Corrective negation ("not just X, but Y").
-- Parataxis and paragraph pinning (short, disconnected clause-stacking used to
-  sound punchy).
-- Summary beats, landing sentences, and setup/payoff constructions (no
-  "the bottom line is…" closers or telegraphed reveals).
-- Rhetorical crutches and performed enthusiasm.
-- The rule of three (no forced triads of examples or adjectives).
-- Parallel sentence structures repeated within a paragraph.
-- Throat-clearing openers ("So,", "Well,", "Great question,").
-- Stacked noun phrases (heavy noun-pileups in place of a verb phrase).
-- Filler intensifiers (genuinely, really, truly, actually).
-- Corporate-register verbs (leverage, underscore, reflect, etc.) and
-  nominalization (turning verbs into abstract nouns, e.g. "utilization" for
-  "using").
-- Hedging qualifiers (somewhat, arguably, to some extent).
-
-Vary sentence length unpredictably rather than settling into a rhythm.
+| Skill (in `.claude/skills/<name>/SKILL.md`) | Read it when |
+|---|---|
+| `obsidian-base-cleanup` | Fixing entities, crosslinks, folders, divisions, Templater. |
+| `obsidian-create-task` | Turning natural language into a task. Task-entry METHOD 1. |
+| `obsidian-process-meeting` | Processing a Granola note in `Meetings/`. Task-entry METHOD 2. |
+| `obsidian-log-session` | The user finishes a work session. |
+| `obsidian-daily-rundown` | "What's on my plate." Also scheduled daily at 9am. |
+| `obsidian-book-tasks` | "Book my tasks." On demand only, never at task creation. |
+| `obsidian-process-resource` | "Process my resources" / "compile". Also auto-scans `raw/`. |
 
 ## Bases, folders, membership
 
 | Base | Folder | In the base when… | Key properties |
 |---|---|---|---|
-| Companies | `Companies/` | tagged `Company` | Division, Stakeholders, Projects, Notes |
+| Companies | `Companies/` | tagged `Company` | Division, Stakeholders, Projects, Meetings, Notes, Slack Channels, Slack DMs |
 | People | `People/<Company>/` | tagged `People` | Company, Division, Role, Email, LinkedIn, Notes |
-| Projects | `Projects/<Company>/` | tagged `Project` | Project Number, Company, Start/End Date, Status, Link |
-| Tasks | `Tasks/Task Notes/` (flat) | tagged `Task` | Task Number, Status, Project, Stakeholders, Company, Created/Due Date, Priority, Effort, Booked ?, Notes, Links |
-| Meetings | `Meetings/Processed Meetings/` | is in the `Meetings/Processed Meetings/` folder | Date, Attendees, Company, Project, Links, Transcript |
+| Projects | `Projects/Client projects/<Company>/` and `Projects/Internal projects/` | tagged `Project` | Project Number, Company, Initiative, Start/End Date, Status, Related Tasks, Link, Slack Channels, Slack DMs |
+| Initiatives | `Initiatives/` (flat) | tagged `Initiative` | Initiative Number, Company, Stakeholders, Related Projects, Related Tasks, Link, Slack Channels, Slack DMs |
+| Tasks | `Tasks/Task Notes/` (flat) | tagged `Task` | Task Number, Status, Project, Initiative, Stakeholders, Company, Created/Due Date, Priority, Effort, Booked ?, Notes, Links |
+| Meetings | `Meetings/Processed Meetings/` | it sits in that folder (not by tag) | Date, Attendees, Company, Project, Initiative, Links, Transcript |
+| Sessions | `Sessions/<Project or Initiative>/` | tagged `Session` | Date, Project, Initiative, Company, Tasks Completed, Tasks In Progress |
+| Resources | `Resources/` (flat) | tagged `Resource` | Title, Link, Type, Author, Company, Project, Initiative, Date, Note, Raw |
 
-Meeting notes are filed with a **`YYYYMMDD ` date prefix** (`20260521 GTM session.md`)
-so the Meetings base reads chronologically; the base surfaces a **Transcript**
-column linking each note to its raw transcript. Transcripts themselves are not
-date-prefixed. Both processed notes and transcripts are then bucketed into
-`<YYYY>-wk.<WW>/` ISO-week subfolders (e.g. `2026-wk.29/`); a note and its
-transcript always share the same bucket. The base's
-`file.inFolder("Meetings/Processed Meetings")` filter is a recursive path match,
-so the week subfolders stay indexed.
-| Sessions | `Sessions/<Project>/` | tagged `Session` | Date, Project, Company, Tasks Completed, Tasks In Progress |
-| Resources | `Resources/` (flat) | tagged `Resource` | Title, Link, Type, Author, Company, Project, Date, Note, Raw |
+`raw/` and `wiki/` are **not** bases. `raw/` is the immutable Web Clipper inbox:
+clippings are named `YYYY-MM-DD-<Title>.md` and carry the clipper's own
+*Clippings* frontmatter. Web Clipper setup is browser-side, documented in
+`raw/README.md`. `wiki/` pages are deliberately untagged, which keeps them out
+of every base, kanban, and rundown.
 
-`raw/` and `wiki/` are **not** bases: `raw/` is the immutable Web Clipper inbox and
-`wiki/` pages are deliberately **untagged** (so they never enter a base, kanban, or
-the rundown). See the "Wiki & Resources" section below.
+**Naming.** Processed meeting notes take a `YYYYMMDD ` date prefix, as in
+`20260521 GTM session.md`, so the base reads chronologically. Transcripts take
+no prefix. Session notes are named `YYYY-MM-DD <Project> Session`.
 
-Every org — clients, your own company, vendors, consultancies — gets a note
-tagged `Company` and appears in the Companies base; their people live in
-`People/<Org>/`. People who belong to no tracked org — prospective hires,
-candidates, or contacts who aren't your own company and aren't a client — get
-`Company: External` (plain text, never a wikilink, like `General task`) and live
-in `People/External/`; `External` is a catch-all label, never a real company note
-and never in the Companies base.
+**Companies and people.** Every org gets a `Company` note: clients, your own
+company, vendors, consultancies. People who belong to no tracked org get
+`Company: External` as plain text and live in `People/External/`. `External` is
+a catch-all label, never a real company note.
 
-**Meeting flow (Granola).** Everything meeting-related lives under `Meetings/`. The
-Granola sync dumps raw notes **and** raw transcripts into `Meetings/Inbox/` — a
-**quarantined** inbox (transient, re-dumped every sync) so the churn stays out of
-the `Meetings/` root. The `obsidian-process-meeting` skill **moves** Granola's
-summary note into `Meetings/Processed Meetings/` (Granola's summary IS the meeting
-record — Claude only adds frontmatter/crosslinks/action items, never writes its own
-summary; if only the transcript has synced, wait) and its transcript into
-`Meetings/Transcripts/` (tagged `RawTranscript`), then deletes the inbox copies.
-Tasks are mined from the summary note, never from the transcript. Beyond the
-attendees (linked in frontmatter), the skill crosslinks **everyone named in the
-summary body** — creating notes for new people (this is a main way people enter
-the vault) and listing them in a `## People mentioned` section. Claude leaves
-Granola's verbatim body intact **except** for correcting obvious transcription
-(ASR) typos in proper nouns — people, companies, projects, events, products — to
-their known-correct spelling (e.g. a mis-heard company name or a colleague's name
-spelled phonetically); it never otherwise rewrites, rephrases, or re-summarizes the
-body.
-Only fix a name when the correct entity is unambiguous; if unsure, leave it and
-flag it. On every filed copy it renames the
-`granola_id` frontmatter key to **`granola_ref`**: the plugin owns any file carrying
-`granola_id` **vault-wide** (it re-indexes and clobbers it wherever it sits), so the
-rename — not just the move — is what makes filed notes permanently safe. Never
-enrich a note in place while it still has `granola_id`. Dedup matches a raw note's
-`granola_id` against filed `granola_ref`; the meeting date is Granola's `created`
-(when it happened), never `updated`.
+**Slack sources.** Companies, projects and initiatives say where in Slack to
+find the latest on them, with two keys at the end of the frontmatter:
 
-**Meeting tasks are validated before they exist.** Filing a meeting (note,
-transcript, entities, `## Action items`) is unconditional and immediate, but Claude
-**never writes a Task note off a meeting without the user's explicit sign-off**. It
-reports the extraction as `I extracted these tasks from [[meeting]]:` followed by
-`* #XXX - Task title` bullets (`#XXX` = the projected Task Number, re-derived for real
-at creation), one block per meeting, then waits. Approval can be blanket, selective,
-or come with edits; silence creates nothing. Until then the meeting's action-item
-bullets read `(proposed task, pending validation)`, as plain text, never wikilinks. The
-unattended auto-scan has nobody to ask, so it stages its proposals in
-`Tasks/Pending/Proposed Tasks.md` (untagged, so invisible to every base, board, and
-rundown) and the daily rundown flags a non-empty queue. The gate is METHOD 2 only: a
-task the user asks for directly is validated by the asking.
+- `Slack Channels`: quoted channel names with the `#`, as in
+  `- "#acme-widget-launch"`. The quotes are required: an unquoted `#` starts a YAML
+  comment and the value is lost.
+- `Slack DMs`: quoted person wikilinks, as in `- "[[Sarah Chen]]"`, for
+  people whose DMs carry news on it.
 
-**Project dashboards & sessions.** Every project note IS its dashboard: `## Overview`,
-`## Tasks` (`![[All Tasks.base#Project Board]]` — a TaskNotes drag-drop kanban),
-`## Meetings` (`![[Meetings.base#Project Meetings]]`), `## Sessions`
-(`![[Sessions.base#Project Sessions]]`), and `## Key Decisions`. The `Project …`
-views live in the **master bases** and filter on `file.hasLink(this.file)` (`this`
-= the embedding note), so one view definition serves every dashboard — edit it
-once, all dashboards change; opened directly in the master base it shows empty
-(expected). Nothing is registered anywhere — anything whose frontmatter wikilinks
-the project shows up automatically. When the
-user finishes a work session, the `obsidian-log-session` skill updates task
-Statuses, writes a `Session`-tagged note into `Sessions/<Project>/` (filename
-`YYYY-MM-DD <Project> Session`), and appends project-level decisions to the
-dashboard's Key Decisions. The **TaskNotes plugin** is remapped to this vault's
-schema (tag `Task`, `Status`, `Due Date`, `Project`, `Created Date`) — don't
-change its field mapping. Project dashboards also carry a `## Resources`
-(`![[Resources.base#Project Resources]]`) section, so any Resource note wikilinking
-the project surfaces there too.
+A channel can sit on more than one note: a project's channel goes on the
+project and on the initiative it serves. To get the latest on an initiative,
+read its own channels plus those of its `Related Projects`, deduplicated. A
+scoping channel goes on the company until the SOW has a project note, then on
+the project as well. Leave both keys blank when nothing is known; never guess a
+channel name.
 
-**Wiki & Resources (Karpathy LLM-wiki pattern).** A three-layer knowledge system,
-additive to and isolated from the CRM/task/meeting flows:
+**Project dashboards.** Every project note IS its dashboard, with these
+sections:
 
-1. **`raw/` (immutable inbox).** The Obsidian **Web Clipper** (browser extension)
-   saves external sources here — articles, posts, news, internal docs — as
-   `YYYY-MM-DD-<Title>.md` with the clipper's *Clippings* frontmatter
-   (`title/source/author/published/created/description/tags:[clippings]`). This is
-   the **source of truth**: Claude **reads it but never edits, renames, moves, or
-   deletes** a file in `raw/` (unlike the meetings inbox, which is a move-out
-   pipeline). Web Clipper setup is browser-side: point its vault + save folder at
-   `raw/` (see `raw/README.md`).
-2. **`Resources/` (structured, the Resources base).** The `obsidian-process-resource`
-   skill turns each clipping into one `Resource`-tagged note with
-   `Title, Link, Type (post|article|blogpost|news|internal doc), Author, Company,
-   Project, Date, Note (1-sentence summary), Raw` (a back-link to the clipping).
-   **Authors are registered as normal People notes and source-orgs as normal
-   Company notes** (e.g. a post from a lab or vendor → a company note for that org
-   + the author as a person), matched by basename or created, appearing in the normal People/Companies
-   bases — no separate tag or view.
-3. **`wiki/` (synthesis, LLM-owned).** Topic folders `wiki/<topic>/` each with an
-   `_index.md`, article notes ending in `## Key Takeaways`, a front-door
-   `wiki/_master-index.md`, and an append-only `wiki/log.md`. Wiki pages carry **no
-   tags and no frontmatter** (bar a topic `_index.md`'s single `Status:`), which is
-   what keeps them out of every base, kanban, and the daily rundown.
+| Section | Embed |
+|---|---|
+| `## Tasks` | `![[All Tasks.base#Project Table]]` |
+| `## Meetings` | `![[Meetings.base#Project Meetings]]` |
+| `## Sessions` | `![[Sessions.base#Project Sessions]]` |
+| `## Resources` | `![[Resources.base#Project Resources]]` |
 
-Ingest is **manual** ("process my resources" / "compile") **and scheduled** (the
-`obsidian-process-resources` auto-scan). Google-Docs/PDF sources often clip empty
-or as UI chrome — flag those (⚠️ in the topic's provenance table), never fabricate.
-`raw/`, `Resources/`, and `wiki/` have **no** Templater folder-template mappings
-(skill-owned, like Sessions/Meetings).
+Plus `## Overview`, `## Milestones`, and `## Key Decisions` as prose.
+Initiative notes use the same dashboard with three differences:
+
+- `## Tasks` embeds `![[All Tasks.base#Initiative Table]]`, grouped by Status
+  (Completed, In Progress, Blocked, Not Started) with Discarded tasks hidden. It filters
+  on `formula.Initiative == this`, so it lists the tasks filed straight under
+  the initiative plus the tasks of every project whose `Initiative` points at
+  it. It does not use `file.hasLink`, so a task that only mentions the
+  initiative in its notes stays out. It lists the same tasks as the chat
+  breakdown.
+- `## Related Projects` sits between `## Milestones` and `## Meetings`. It holds
+  `### Internal`, embedding `![[Projects.base#Initiative Internal Projects]]`,
+  and `### Client`, embedding `![[Projects.base#Initiative Client Projects]]`.
+  The split follows the project's folder, so it needs no property.
+- `## Next Steps` follows `## Related Projects`. It lists what the user is waiting
+  on that is not a task, one checkbox per line:
+  `- [ ] <what> (waiting on [[Person]], since YYYY-MM-DD)`. The person is a
+  wikilink, so the item backlinks from their note. Check a line off when it
+  arrives. Delete it when it turns into a task. Write only the items the user
+  gives; never infer one. Projects do not get this section.
+
+Dashboards embed the **table** view,
+not the kanban `Project Board`. The board still exists in `All Tasks.base` and
+`Tasks/Tasks Kanban.base` for drag-drop work across every task at once.
+`## Milestones` sits directly after `## Tasks` and holds a checkbox list, one
+line per milestone, `- [ ] <name> — YYYY-MM-DD`. Dates are ISO in the note and
+render as `Weekday, DD - Mon - YYYY` in chat breakdowns, where a concluded
+milestone also gets a green ✅ after it.
+
+**Chat breakdown of a project** runs in this order: Title, Target End Date,
+Tasks (Concluded / In Progress / Blocked / Not Started, each bullet
+`#<num> <name> — <date>`, ordered by due date with no-due-date last),
+Milestones, then **Status**, which prints the `Status` frontmatter value verbatim
+(`In Progress`, `Completed`, `Live Project`, `In Negotiation`, and so on). Never
+map or simplify it. **Chat breakdown of an initiative** is the default
+initiative view. It drops Target End Date and Status, since initiatives carry
+neither, and runs in this order: Title, Tasks (Completed / In Progress /
+Blocked / Not Started, each bullet `#<num> <name> (<date>)`, same ordering, Discarded left
+out), Milestones, Related Projects split into Internal and Client by folder
+(each `<name>: <Status>`, where that Status is the project's; an empty group
+reads `none`), then Next Steps, open items only.
+
+The `Project …` views live in
+the **master bases** and filter on `file.hasLink(this.file)`, where `this` is the
+embedding note. One definition serves every dashboard: edit it once and all
+dashboards change. Opened directly in the master base, such a view shows empty.
+That is expected. Nothing needs registering: any note whose frontmatter
+wikilinks the project or initiative appears automatically, whichever property
+holds the link.
+
+**Wiki and Resources** (Karpathy LLM-wiki pattern) is a three-layer system,
+additive to the CRM flows and isolated from them. `raw/` is the immutable Web
+Clipper inbox. `Resources/` is the structured base. `wiki/` is LLM-owned
+synthesis: topic folders with an `_index.md`, a front-door
+`wiki/_master-index.md`, and an append-only `wiki/log.md`. The
+`obsidian-process-resource` skill owns the procedure.
 
 ## Golden rules
 
-1. **Frontmatter links are quoted wikilinks**: `Company: "[[Acme]]"`; multi-value
-   = a YAML list of `- "[[X]]"`. Plain text does NOT create a backlink.
-2. **Wikilink target = the other note's basename** (folder-independent). One note
-   per entity; reconcile duplicates to the fullest name and fix backlinks with an
-   exact token replace.
-3. **People / Projects live in `<Company>` subfolders**; Companies is flat.
-   **Tasks are flat in `Tasks/Task Notes/`** (no per-project subfolders — the base
-   organizes by the `Project` property). `Meetings/` has three subfolders —
-   `Inbox/` (Granola sync dump, transient, flat), `Processed Meetings/`, and
-   `Transcripts/`; the latter two bucket their notes into `<YYYY>-wk.<WW>/`
-   ISO-week subfolders (e.g. `2026-wk.29/`), a note and its transcript sharing the
-   same bucket. `Tasks/` also holds `Rundowns/` — digest notes tagged
-   `Rundown`, never `Task` (they must stay out of the Tasks base and kanban boards),
-   and `Pending/`, holding the single **untagged** `Proposed Tasks.md` staging queue of
-   meeting-derived task proposals awaiting the user's validation (a proposal is not a
-   task: never tagged `Task`, never numbered, never on a board).
-4. **Divisions** are plain-text org units: a company lists its divisions; a person
-   picks one (identical string). Blank for orgs with no division breakdown.
-   **Your own company's projects always carry `Division: internal` or
-   `Division: personal`** (never a bare `Company: "[[Acme]]"` with no Division) to
-   separate the company's own internal initiatives from your personal projects, so
-   the Projects base reads them as "Acme [internal]" / "Acme [personal]". This
-   project-level Division applies to your own company only and is distinct from the
-   People division taxonomy (org units like Engineering/Sales); client projects
-   don't use it. Set the company name in `Templates/Project.md` (`OWN_COMPANY`).
-5. **Tasks**: `Task Number` always quoted (`"1"`); `Status` ∈ {Not Started,
-   In Progress, Completed, Discarded}; no sub-task hierarchy — every task is a
-   flat note; `Project: General task` (plain text) when none. `Priority` is an
-   optional `High`/`Medium`/`Low` (blank = unset) used to decide what to book
-   first — never mandatory. `Effort` is the
-   estimated minutes to do the task, always a multiple of 15 (`15`, `30`, `45`, …),
-   blank when unknown — it's what calendar slots are sized from. `Booked ?` is a
-   plain `Y`/`N` flag (default `N`) tracking whether a calendar slot has been
-   booked for the task; flip to `Y` once booked. **`Status`
-   frontmatter is the single source of truth** — the kanban boards
-   (`Tasks/Tasks Kanban.base` and each project dashboard's Board) are TaskNotes
-   views over it: they pick up tasks and drag-drop writes `Status` back. Never
-   maintain board files by hand. **Projects** likewise carry a sequential
-   `Project Number` (always quoted, like `Task Number`; one global sequence across
-   all companies), auto-assigned by the Project template as `(highest existing)+1`.
-6. **Meetings** base is folder-filtered on `Meetings/Processed Meetings/` (not
-   tag-based). `Meetings/Inbox/` (the Granola inbox) is intentionally excluded
-   from Templater folder-templates because Granola auto-dumps notes/transcripts
-   there — a folder template would corrupt them, and the sync overwrites that
-   folder anyway. Deleting a raw inbox file doesn't stick while its meeting is in
-   Granola's sync window (the sync re-dumps it ~every 30 min); that's expected —
-   the base only indexes `Processed Meetings/`, and the auto-processor re-files.
-7. **Never edit `.base` view files** unless asked; **prefer a blank property over
-   an invented value**; after edits, **verify no broken wikilinks**.
-8. **`raw/` is immutable** — read, never edit/rename/move/delete a clipping there.
-   **`wiki/` pages and `raw/` clippings never carry the CRM tags** (`Task`,
-   `Meeting`, `Session`, and wiki pages also not `People`/`Company`/`Project`), so
-   they stay out of every base, kanban, and the rundown. Resource notes are the one
-   exception: tagged `Resource`, they belong to the Resources base.
+**1. Frontmatter links are quoted wikilinks.**
+Write `Company: "[[Acme]]"`. For multi-value, use a YAML list of `- "[[X]]"`.
+Plain text does NOT create a backlink.
 
-## Creating notes
+**Free-text values are always double-quoted.** Write `Notes: "…"` (and `Note:`
+on Resources) in quotes every time, including when you append to an existing
+value. Unquoted, a colon followed by a space, a leading `[[`, or a leading
+quote breaks the YAML, and Bases silently drops the note. Escape inner double
+quotes as `\"`. After editing frontmatter, check that it still parses.
 
-Templater (`Templates/`) scaffolds new notes and auto-files them:
-- A new note in `People/`, `Companies/`, `Projects/`, or `Tasks/` runs the matching
-  template (folder templates, trigger-on-create).
-- The `Meeting` template is manual (Insert Template) — never folder-mapped — and
-  files into `Meetings/Processed Meetings/`.
-- `Sessions/` has **no folder template** (like `Meetings/`): session notes are
-  created fully-formed by `obsidian-log-session`; a trigger-on-create template
-  would clobber them. Reports produced at session close live with the session
-  (a section in the session note, or a companion note in `Sessions/<Project>/`)
-  — there is **no top-level Reports folder**.
-- `Tasks/Rundowns/` and `Tasks/Pending/` are **shielded from the Task folder template**
-  (a no-op `Templates/Noop.md` mapping each plus guards inside `Templates/Task.md`):
-  rundown notes are generated fully-formed by `obsidian-daily-rundown`, and the
-  proposal queue by `obsidian-process-meeting` / the meeting auto-scan.
-- `raw/`, `Resources/`, and `wiki/` have **no folder template** (like
-  `Sessions/`/`Meetings/`): `raw/` is filled by the Web Clipper, and Resource/wiki
-  notes are created fully-formed by `obsidian-process-resource`.
+**2. A wikilink target is the other note's basename.**
+Basenames are folder-independent. Keep one note per entity. Reconcile duplicates
+to the fullest name, and fix backlinks with an exact token replace.
 
-**Fresh-vault order:** create **Companies** (with their Divisions) first, then
-People/Projects, then Tasks.
+**3. Folder layout.**
+
+- People live in `<Company>` subfolders. Companies is flat.
+- **`Projects/` splits by who the work is for**, one level above the company
+  folders:
+  - `Projects/Client projects/<Company>/`: one folder per client, as before.
+  - `Projects/Internal projects/`: **flat**. Every internal project is your own
+    company's, so a company folder inside it would carry no information.
+- **Initiatives are flat in `Initiatives/`**, the way tasks are flat.
+- **Tasks are flat in `Tasks/Task Notes/`.** No per-project subfolders. The base
+  organizes them by the `Project` and `Initiative` properties.
+- `Meetings/` has three subfolders:
+  - `Inbox/`: the Granola sync dump. Transient and flat.
+  - `Processed Meetings/` and `Transcripts/`: both bucketed into
+    `<YYYY>-wk.<WW>/` ISO-week subfolders, for example `2026-wk.29/`. A note and
+    its transcript always share a bucket. The base filter matches paths
+    recursively, so the buckets stay indexed.
+- `Tasks/` holds two more folders:
+  - `Rundowns/`: digest notes tagged `Rundown`, never `Task`. They must stay out
+    of the Tasks base and the kanban boards.
+  - `Pending/`: holds the single **untagged** `Proposed Tasks.md` staging queue.
+    A proposal is not a task: never tagged `Task`, never numbered, never on a
+    board.
+
+**4. Divisions are plain-text org units.**
+A company lists its divisions. A person picks one, using the identical string.
+Leave it blank for orgs with no division breakdown.
+
+**Your own company's projects always carry `Division: internal` or
+`Division: personal`.** Never leave a bare `Company: "[[Acme]]"` with no Division.
+It separates the company's internal initiatives from your personal projects, so
+the Projects base reads "Acme [internal]" and "Acme [personal]". This
+project-level Division applies to your own company only, and differs from the
+People division taxonomy (org units like Engineering and Sales). Client projects
+do not use it. Set the company name in `Templates/Project.md` (`OWN_COMPANY`).
+
+**5. Tasks, projects and initiatives.**
+
+- `Task Number` is always quoted, as in `"1"`. Every task needs one.
+- `Status` is one of: Not Started, In Progress, Blocked, Completed, Discarded.
+- **`Blocked`** is an open status for a task that cannot move until something
+  outside the user's control arrives. A Blocked task always carries `Blocker`, one
+  quoted sentence that names what it waits on and who owns it, as in
+  `Blocker: "Waiting on the PDF one-pager from [[Sarah Chen]]."` Write it
+  only from what the user says. When the task moves to any other status, clear
+  `Blocker` to blank. Blocked tasks are open: they appear on the rundown with
+  their blocker sentence, but they are never booked into the calendar.
+- No sub-task hierarchy. Every task is a flat note.
+- A task has exactly one container, named in either `Project` or `Initiative`.
+  `Project` is a quoted wikilink to a project note, or one of two plain-text
+  labels:
+  - `General task`: work with no project. Keep the normal `Company`.
+  - `Personal Task`: the user's own to-dos, such as appointments and errands.
+    Always pair it with `Company: N/A`, as plain text. `N/A` is used for nothing
+    else.
+- `Initiative` is a quoted wikilink to an initiative note. A task under an
+  initiative leaves `Project` blank, and the reverse. **TaskNotes reads only
+  `Project`** as its project field, so an initiative task shows a blank project
+  in TaskNotes' own UI. Every Bases view still finds it, because the `Project …`
+  views filter `file.hasLink(this.file)`, which matches a link in any property.
+  Do not paper over this by filling both keys.
+- **A project task belongs to its project's initiative too.** The Tasks base's
+  **Initiative column is computed** (`formula.Initiative`): it shows the task's
+  own `Initiative`, or else the `Initiative` of the task's project. The
+  initiative dashboard's task table filters on that same formula, so a project
+  task appears on both the project and the initiative dashboards. Never copy
+  the initiative onto a project task: if the project moves to another
+  initiative, a copied value goes stale and nothing flags it.
+- `Priority` is an optional `High`, `Medium`, or `Low`. Blank means unset. It
+  decides what gets booked first. It is never mandatory.
+- `Effort` is the estimated minutes, always a multiple of 15. Leave it blank
+  when unknown. Calendar slots are sized from it.
+- `Booked ?` is a plain `Y` or `N`, defaulting to `N`. Flip it to `Y` once a
+  calendar slot exists.
+- **`Status` frontmatter is the single source of truth.** The kanban board
+  (`Tasks/Tasks Kanban.base`, and the `Project Board` view for ad hoc use) is a
+  TaskNotes view over it: it picks up tasks, and drag-drop writes `Status` back.
+  **Never maintain board files by hand.**
+- **Do not change the TaskNotes field mapping.** It is remapped to this vault's
+  schema: tag `Task`, `Status`, `Due Date`, `Project`, `Created Date`.
+- `Related Tasks` on a project or initiative lists its tasks as **aliased**
+  wikilinks that display the number, `- "[[<task title>|#<num>]]"`. It is a
+  hand-maintained index, so append to it whenever a task is created against that
+  container. The embedded task table is the live view; `Related Tasks` is the
+  at-a-glance list you can read in the frontmatter.
+- **Projects** carry a sequential `Project Number`, always quoted. One global
+  sequence across all companies. The Project template assigns (highest) + 1.
+- **Initiatives** are open-ended containers, wider than a project, and carry
+  **no Start or End Date, and no `Status`**. A project is finite and dated; an
+  initiative runs until the user closes it, so a status field would only ever read
+  "In Progress". The state that matters lives on its projects and tasks. They
+  hold a sequential quoted `Initiative Number` on their own sequence, separate
+  from `Project Number`. `Related Projects` links the projects that deliver
+  pieces of the initiative, and each such project points back with
+  `Initiative`.
+- **Every project needs a target `End Date` and milestones.** When creating a
+  project, ask the user for both: the target end date, and each milestone with its
+  own end date. Suggest candidate milestones from the note's Overview, meetings,
+  and open tasks, but **never write a milestone without his explicit
+  authority.** A suggestion he did not answer creates nothing. Leaving
+  `## Milestones` empty is correct until he decides; inventing entries is not.
+
+**6. Never write a Task note off a meeting without the user's explicit sign-off.**
+Filing the meeting is unconditional and immediate: the note, the transcript, the
+entities, the `## Action items`. Creating tasks is not. Report the extraction,
+then wait. Approval can be blanket, selective, or come with edits. Silence
+creates nothing. Until approval, action-item bullets read
+`(proposed task, pending validation)` as plain text, never as wikilinks. The
+unattended auto-scan has nobody to ask, so it stages proposals in
+`Tasks/Pending/Proposed Tasks.md`. This gate covers METHOD 2 only: a task the user
+asks for directly is validated by the asking.
+`obsidian-process-meeting` holds the reporting format.
+
+**7. Never enrich a Granola note in place while it still has `granola_id`.**
+The plugin owns any file carrying that key **anywhere in the vault**, and
+re-indexes and clobbers it wherever it sits. Filing a note means renaming the
+key to `granola_ref`. Moving the file is not enough.
+
+**8. The Meetings base is folder-filtered on `Meetings/Processed Meetings/`,**
+not tag-based. `Meetings/Inbox/` is deliberately excluded from Templater
+folder-templates, because Granola auto-dumps there and a template would corrupt
+the files. Deleting a raw inbox file does not stick while its meeting is inside
+Granola's sync window, which re-dumps about every 30 minutes. That is expected.
+
+**9. `raw/` is immutable.**
+Read a clipping. Never edit, rename, move, or delete one. The meetings inbox is
+different: that one is a move-out pipeline.
+
+Tagging restrictions:
+
+- `raw/` clippings and `wiki/` pages never carry `Task`, `Meeting`, or
+  `Session`.
+- `wiki/` pages additionally never carry `People`, `Company`, `Project`, or
+  `Initiative`.
+- Resource notes are the one exception: tagged `Resource`, in the Resources base.
+
+**10. Editing care.**
+
+- **Never edit `.base` view files** unless asked.
+- **Prefer a blank property over an invented value.**
+- After edits, **verify no broken wikilinks.**
+
+**11. File every pasted document link.**
+When the user pastes a Google Docs, Sheets, Slides, or Drive link in chat, store
+the URL in the vault in the same turn, whatever else the request is about. Store
+the link, not the document: read the content if the task needs it, but never
+copy it into the note to "keep" it. The link is the retrieval path.
+
+- **Where.** The most specific note the document belongs to: a task, then a
+  project or initiative, then a company. A container-level document (SOW,
+  scoping sheet, proposal, Drive folder) goes on the project, initiative, or
+  company, even when a task prompted it. If no note fits, ask where it goes.
+- **How.** A body section `## Links`, one bullet per document:
+  `- [<doc title>](<url>): <what it is>. Added YYYY-MM-DD.` Take the title from
+  the document when it is readable, otherwise from what the user said about it.
+  Create the section at the end of the note if it is missing. Existing
+  frontmatter `Link` and `Links` values stay as they are.
+- **No duplicates.** Before adding, grep the vault for the document ID (the
+  long token after `/d/` or `/folders/`). If the link is already filed on the
+  right note, leave it. Drop the query string (everything from `?`), but keep
+  a `#gid=` anchor, since it points at a specific Sheets tab.
+- Say in the reply which note got the link.
+
+## Templater folder templates
+
+Templater (`Templates/`) scaffolds and auto-files new notes. Getting this map
+wrong clobbers skill-generated notes.
+
+| Folder | Template on create |
+|---|---|
+| `People/`, `Companies/`, `Projects/`, `Initiatives/`, `Tasks/` | Yes, the matching template. |
+| `Meetings/Processed Meetings/` | Manual only (Insert Template), never folder-mapped. |
+| `Tasks/Rundowns/`, `Tasks/Pending/` | **Shielded**: a no-op `Templates/Noop.md` plus guards in `Templates/Task.md`. |
+| `Sessions/`, `raw/`, `Resources/`, `wiki/` | **None.** A skill (or the Web Clipper) creates these fully-formed. |
+
+The `Projects/` mapping covers both subfolders, since Templater matches folder
+prefixes. `Templates/Project.md` files a new note to
+`Projects/Client projects/<Company>/`, or to `Projects/Internal projects/` when
+the company is your own (`OWN_COMPANY`).
+
+Session reports live with the session: a section in the session note, or a
+companion note in `Sessions/<Project or Initiative>/`. There is **no top-level
+Reports folder.**
+
+**Fresh-vault order:** Companies first, with their Divisions. Then People,
+Initiatives and Projects. Then Tasks.
 
 ## Rebuilding elsewhere
 

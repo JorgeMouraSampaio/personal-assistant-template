@@ -120,7 +120,8 @@ generated, will process on a later pass" and leave the inbox untouched. Note the
 summary's `granola_id`, `created` (→ meeting date), and its paired transcript at
 `Meetings/Inbox/<title>-transcript.md` (same inbox). Skip already-done ones via the
 `granola_ref` dedup check above. Identify: **date**, **attendees** (names + org),
-the **company/client**, the **project** if any, **URLs/docs**, and **action items**.
+the **company/client**, the **project or initiative** if any, **URLs/docs**, and
+**action items**.
 
 ### 2. Resolve & crosslink entities (auto-create missing)
 **Include the user as an attendee whenever he participated.** Granola records from
@@ -137,19 +138,25 @@ For each attendee, company, and project:
 - If not, **create it** per `obsidian-base-cleanup`: people under
   `People/<Company>/` (your own colleagues → `People/<your company>/`; external → their
   own company, creating a `Company`-tagged note if needed; prospective hires or
-  unaffiliated contacts → `Company: External`, `People/External/`), projects under
-  `Projects/<Company>/`. Fill only what the meeting honestly tells you; leave the
-  rest blank.
+  unaffiliated contacts → `Company: External`, `People/External/`), client projects
+  under `Projects/Client projects/<Company>/` and your own company's projects flat in
+  `Projects/Internal projects/`. Fill only what the meeting honestly tells you;
+  leave the rest blank. **Never create an initiative** from a meeting: link one
+  that exists, or leave `Initiative` blank.
 - A person's `Company` is their employer, inferred from email domain or context
   (`@amazon.com` → AWS, your own domain → your own company). "Sales team" and other group labels
   are not people — don't link or create them.
+- **Append the new meeting to its Company note's `Meetings` field.** Add
+  `"[[<processed meeting note>]]"` to the top of that company's `Meetings` list
+  (most recent first) once the note is filed in step 3. Every `Company`-tagged
+  note carries a `Meetings` field (blank if none yet) alongside `Projects`.
 
 **Also crosslink people named in the body, not just attendees.** Granola's
 summaries mention colleagues and contacts in prose (e.g. "Alex will…", "per
 Helena"). Scan the summary for every **person** named beyond the attendees and,
 for each one you can confidently identify, resolve or **create** their note the
 same way (matching an existing note by basename first — mind transcription
-variants like Rulian/Rullian). This is how new people enter the vault. They get
+variants like Alex/Alexx). This is how new people enter the vault. They get
 linked via the `## People mentioned` section (step 3), **not** by editing links
 into Granola's verbatim body. Judgment: create a note for any clearly-real,
 placeable person (especially internal colleagues); **skip** garbled/uncertain
@@ -179,6 +186,7 @@ Attendees:
   - "[[John Smith]]"
 Company: "[[AWS]]"          # or blank
 Project: "[[Widget]]"       # or plain blank; never wikilink "General task"
+Initiative:                 # "[[Widget Launch]]" when the meeting belongs to an initiative, else blank
 Links:                      # any doc/ticket URLs mentioned
   - https://notes.granola.ai/t/...
 Transcript: "[[<title>-transcript]]"
@@ -216,8 +224,9 @@ the user). the user is always an attendee (step 2), so always weigh the action i
 his own. **"Note-taker" (or "notetaker") in a Granola summary means the user** — he owns
 the recording account — so any action assigned to the note-taker is his. For each of
 the user's items, work out the full task shape per `obsidian-create-task`
-(title, `Project`/`Company` inherited from the meeting with plain `General task` if
-none, `Stakeholders` = the other people on the item, `Due Date` resolved against the
+(title, `Project`/`Initiative`/`Company` inherited from the meeting — plain
+`General task` when the meeting had neither container, `Stakeholders` = the other
+people on the item, `Due Date` resolved against the
 meeting date / today or blank, `Links`, and
 `Notes: From [[<processed meeting basename>]]`), then **stop**. Nothing is written to
 `Tasks/Task Notes/` until step 6b.
@@ -234,6 +243,10 @@ Run the validation gate below. Only the items the user approves become Task note
 - File flat into `Tasks/Task Notes/` (no per-project subfolders). No kanban step —
   the boards are TaskNotes views over the `Status` property and pick the task up
   automatically.
+- **Register each task on its container**: append
+  `- "[[<task title>|#<Task Number>]]"` to the `Related Tasks` list of the linked
+  project or initiative note (see `obsidian-create-task`). A `General task` or
+  `Personal Task` has no container, so nothing is appended.
 - Back-fill `## Action items` in the processed note: each created task's bullet
   becomes `- [ ] [[Task title]]`. A rejected proposal keeps a plain bullet with
   `(not tracked as a task)`; the action item stays in the record either way.
@@ -256,8 +269,9 @@ the attendees is named, write `- None.`
 Delete the raw note from `Meetings/Inbox/` (its content now lives in
 `Meetings/Processed Meetings/`; this avoids a basename collision and keeps the inbox
 to only unprocessed items). Run the broken-wikilink check from
-`obsidian-base-cleanup`: note→attendees, note→company/project, note↔transcript,
-note→mentioned-people, and task↔note links must all resolve. Pending proposals are
+`obsidian-base-cleanup`: note→attendees, note→company/project/initiative,
+note↔transcript, note→mentioned-people, task↔note, and each container's new
+`Related Tasks` entry must all resolve. Pending proposals are
 plain text, not wikilinks, so they can't break the check; if you see a
 `- [ ] [[Task title]]` bullet whose note doesn't exist, a task was approved but never
 written. Then summarize: attendees linked, people/entities created, transcript filed,
@@ -280,8 +294,8 @@ meeting, blocks separated by a blank line:
 ```
 I extracted these tasks from [[20260716 GTM session]]:
 
-* #412 - Send the migration outreach to Sarah Chen (AWS, due 2026-08-04)
-* #413 - Draft the migration offering one-pager (Migration Offering)
+* #412 - Send the launch outreach to Sarah Chen (AWS, due 2026-08-04)
+* #413 - Draft the offering one-pager (Widget Launch)
 
 I extracted these tasks from [[20260717 Acme sync]]:
 
@@ -295,8 +309,9 @@ Approve all, or tell me which to drop or edit.
   handle for the conversation, not a reservation. Re-derive the real number when you
   actually create the note, and if it shifted, report the number you assigned.
 - The bullet is `* #XXX - <Task title>`. Append only the metadata that exists, in
-  parentheses, comma-separated: company or project, `due YYYY-MM-DD`, stakeholders if
-  they add signal. Blank fields are simply absent. No metadata at all is fine.
+  parentheses, comma-separated: company, project or initiative, `due YYYY-MM-DD`,
+  stakeholders if they add signal. Blank fields are simply absent. No metadata at
+  all is fine.
 - One bullet per task, one block per meeting, even for a single task or a single
   meeting. A meeting that yielded none gets no block; say so in one line
   (`No tasks for me out of [[20260718 standup]].`).
@@ -320,16 +335,17 @@ normally, then appends one block per meeting to `Tasks/Pending/Proposed Tasks.md
 
 ```markdown
 ### From [[20260716 GTM session]] (staged 2026-07-29)
-- **Send the migration outreach to Sarah Chen**
-  - Project: [[Migration Offering]] · Company: [[AWS]]
+- **Send the launch outreach to Sarah Chen**
+  - Project: · Initiative: [[Widget Launch]] · Company: [[AWS]]
   - Stakeholders: [[Sarah Chen]], [[John Smith]]
   - Due Date: 2026-08-04
   - Links:
   - Notes: From [[20260716 GTM session]]
 ```
 
-Store no `Task Number` (it would go stale). Omit or leave blank any field the meeting
-didn't give you. That note is **untagged** so it stays out of the Tasks base, the
+Store no `Task Number` (it would go stale). Carry both `Project` and `Initiative`
+so the container survives the wait, with the unused one blank. Omit or leave blank
+any field the meeting didn't give you. That note is **untagged** so it stays out of the Tasks base, the
 kanban boards, and the rundown; keep it that way. The daily rundown flags a non-empty
 queue, and any later interactive run reads the queue back in the format above (mixing
 freshly-extracted blocks and staged ones, projected numbers computed at read-back).

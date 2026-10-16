@@ -4,7 +4,7 @@ A lightweight personal CRM + project/task system built on [Obsidian](https://obs
 designed to be driven by [Claude Code](https://claude.com/claude-code). It combines:
 
 - **Obsidian Bases** (core plugin) — table views over plain Markdown notes:
-  Companies, People, Projects, Tasks, Meetings, Sessions, Resources.
+  Companies, People, Projects, Initiatives, Tasks, Meetings, Sessions, Resources.
 - **[Templater](https://github.com/SilentVoid13/Templater)** — auto-scaffolds new
   notes when you create them inside the right folder.
 - **[TaskNotes](https://github.com/callumalpass/tasknotes)** — drag-drop kanban
@@ -28,7 +28,8 @@ Everything is plain Markdown with YAML frontmatter. No databases, no lock-in.
    - If Templater doesn't pick it up: set template folder to `Templates`, enable
      *Trigger Templater on new file creation*, and add folder templates
      People→`Templates/Person.md`, Companies→`Templates/Company.md`,
-     Projects→`Templates/Project.md`, Tasks→`Templates/Task.md`,
+     Projects→`Templates/Project.md`, Initiatives→`Templates/Initiative.md`,
+     Tasks→`Templates/Task.md`,
      Tasks/Rundowns→`Templates/Noop.md`, Tasks/Pending→`Templates/Noop.md`.
 3. Open `Templates/Project.md` and set `OWN_COMPANY` to your own company's note
    name (or `""` to switch off the internal/personal project split).
@@ -42,8 +43,8 @@ Everything is plain Markdown with YAML frontmatter. No databases, no lock-in.
 6. *(Optional)* Open the folder in **Claude Code** — `CLAUDE.md` and the skills
    under `.claude/skills/` teach it the whole system.
 7. Start entering data: create a **Company** first (so People and Projects can
-   link to it), then People, Projects, Tasks. Creating a note inside `People/`,
-   `Companies/`, `Projects/`, or `Tasks/` triggers the matching template.
+   link to it), then People, Initiatives, Projects, Tasks. Creating a note inside
+   `People/`, `Companies/`, `Projects/`, `Initiatives/`, or `Tasks/` triggers the matching template.
 
 ## How it works
 
@@ -51,7 +52,8 @@ Everything is plain Markdown with YAML frontmatter. No databases, no lock-in.
 |---|---|---|
 | Companies | `Companies/` | tagged `Company` |
 | People | `People/<Company>/` | tagged `People` |
-| Projects | `Projects/<Company>/` | tagged `Project` |
+| Projects | `Projects/Client projects/<Company>/` or `Projects/Internal projects/` | tagged `Project` |
+| Initiatives | `Initiatives/` (flat) | tagged `Initiative` |
 | Tasks | `Tasks/Task Notes/` (flat) | tagged `Task` |
 | Meetings | `Meetings/Processed Meetings/` | folder-based |
 | Sessions | `Sessions/<Project>/` | tagged `Session` |

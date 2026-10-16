@@ -41,10 +41,10 @@ folders, entity creation, broken-link check) first — this skill composes it.
 | Structured | `Resources/` | this skill | one `Resource`-tagged note per source = the Resources base |
 | Synthesis | `wiki/` | this skill | topic pages + `_master-index.md` + `log.md`; **untagged**, so never in a Base/board |
 
-`wiki/` pages carry **no tags and no frontmatter** (except a topic `_index.md`'s
-single `Status:` prop) — that is what keeps them out of every Base, kanban, and the
-daily rundown. Never add `Task`, `Meeting`, `Session`, `People`, `Company`, or
-`Project` tags to a wiki or raw file.
+`wiki/` pages carry **no tags and no frontmatter at all**, topic `_index.md`
+included — that is what keeps them out of every Base, kanban, and the daily
+rundown. Never add `Task`, `Meeting`, `Session`, `People`, `Company`, `Project`,
+or `Initiative` tags to a wiki or raw file.
 
 ## Resource note schema
 
@@ -61,8 +61,9 @@ Author:
   - "[[Sarah Chen]]"
 Company:                 # blank, or "[[Acme Labs]]" when a source-org applies
 Project:                 # blank, or "[[<Project>]]"
+Initiative:              # blank, or "[[<Initiative>]]" when the resource belongs to an initiative
 Date: 2026-06-02         # published date (clipper `published`); fall back to `created`
-Note: One-sentence summary of what this source says.
+Note: "One-sentence summary of what this source says."   # always double-quoted, see CLAUDE.md rule 1
 Raw: "[[2026-06-25-How agentic retrieval changes internal search]]"
 ---
 ```
@@ -128,8 +129,11 @@ org/Drive/Notion → `internal doc`. When ambiguous, prefer `article`.
   `Company` note first, else **create** one tagged `[Company]`. If the org is
   already a tracked CRM company (a client/vendor), just link it. Group labels
   ("the research team") are not companies — skip them.
-- **Project → link** only if the source clearly ties to a tracked project; else
-  leave `Project` blank.
+- **Project or Initiative → link** only if the source clearly ties to a tracked
+  one; else leave both blank. The two are mutually exclusive, `Initiative` sits
+  immediately after `Project`, and a resource under a standing track (a GTM
+  motion, a hiring track) belongs to the initiative rather than to any one
+  project. Never create a project or an initiative to hold a resource.
 - Authors and source-orgs are **normal People/Company notes** and appear in the
   normal People/Companies bases by design (no separate tag or view).
 
@@ -137,7 +141,9 @@ org/Drive/Notion → `internal doc`. When ambiguous, prefer `article`.
 Create `Resources/<Sanitized Title>.md` with the schema above. Sanitize the
 filename (drop characters Obsidian dislikes: `/ : # ^ [ ] |`; keep it readable).
 Set `Raw` to the clipping's basename. This note is the graph hub: its
-`Author`/`Company`/`Project` wikilinks backlink onto those notes automatically.
+`Author`/`Company`/`Project`/`Initiative` wikilinks backlink onto those notes
+automatically, and the `Project Resources` view puts the resource on the linked
+project's or initiative's dashboard.
 
 ### 6. Weave into the wiki ("compile")
 This is the Karpathy step — synthesize, don't just file.
@@ -150,8 +156,8 @@ This is the Karpathy step — synthesize, don't just file.
   related articles and to the `[[Resource]]` note, ending in a `## Key Takeaways`
   section. If the source informs an existing article, **update it** rather than
   duplicating; a single source can touch several articles.
-- **Topic `_index.md`** (`wiki/<topic>/_index.md`) — frontmatter is a single
-  `Status:` prop; body has `# <Topic>`, a one-paragraph definition, `## Articles`
+- **Topic `_index.md`** (`wiki/<topic>/_index.md`) — no frontmatter; the file
+  opens on `# <Topic>`, then a one-paragraph definition, `## Articles`
   (bulleted `[[article]] — description`), `## Related Topics` (links to sibling
   topics, which may not exist yet), and a `## Resources processed` provenance
   table:
@@ -170,8 +176,8 @@ This is the Karpathy step — synthesize, don't just file.
 
 ### 7. Verify & report
 Run the broken-wikilink check from `obsidian-base-cleanup`: resource→author,
-resource→company/project, resource→raw, wiki article↔resource, topic↔master-index
-must all resolve. `raw/` must be **byte-for-byte unchanged**. Then summarize:
+resource→company/project/initiative, resource→raw, wiki article↔resource,
+topic↔master-index must all resolve. `raw/` must be **byte-for-byte unchanged**. Then summarize:
 which clippings were ingested, the Resource notes created, People/Companies created
 vs. linked, which wiki topics/articles were written or updated, and any ⚠️
 empty-capture sources.

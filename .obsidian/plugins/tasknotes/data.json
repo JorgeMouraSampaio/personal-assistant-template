@@ -198,13 +198,24 @@
       "autoArchiveDelay": 5
     },
     {
+      "id": "blocked",
+      "value": "Blocked",
+      "label": "Blocked",
+      "color": "#e69500",
+      "isCompleted": false,
+      "excludeFromCycle": false,
+      "order": 2,
+      "autoArchive": false,
+      "autoArchiveDelay": 5
+    },
+    {
       "id": "completed",
       "value": "Completed",
       "label": "Completed",
       "color": "#00aa00",
       "isCompleted": true,
       "excludeFromCycle": false,
-      "order": 2,
+      "order": 3,
       "autoArchive": false,
       "autoArchiveDelay": 5
     },
@@ -215,7 +226,7 @@
       "color": "#aa0000",
       "isCompleted": true,
       "excludeFromCycle": false,
-      "order": 3,
+      "order": 4,
       "autoArchive": false,
       "autoArchiveDelay": 5
     }
@@ -292,7 +303,14 @@
   "apiAuthToken": "",
   "enableMCP": false,
   "webhooks": [],
-  "userFields": [],
+  "userFields": [
+    {
+      "id": "field_1788811102660",
+      "displayName": "Initiative",
+      "key": "Initiative",
+      "type": "text"
+    }
+  ],
   "modalFieldsConfig": {
     "version": 1,
     "fields": [
@@ -386,6 +404,16 @@
         "visibleInEdit": true,
         "order": 1,
         "enabled": true
+      },
+      {
+        "id": "field_1788811102660",
+        "fieldType": "user",
+        "group": "custom",
+        "displayName": "Initiative",
+        "visibleInCreation": true,
+        "visibleInEdit": true,
+        "order": 0,
+        "enabled": true
       }
     ],
     "groups": [
@@ -433,6 +461,7 @@
     "due",
     "scheduled",
     "projects",
+    "user:field_1788811102660",
     "contexts",
     "tags",
     "blocked",
@@ -489,5 +518,5 @@
   },
   "enableDebugLogging": false,
   "lastSeenVersion": "4.11.1",
-  "lastNotifiedReleaseVersion": "4.12.3"
+  "lastNotifiedReleaseVersion": "4.12.5"
 }

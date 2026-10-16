@@ -35,6 +35,10 @@
       "template": "Templates/Project.md"
     },
     {
+      "folder": "Initiatives",
+      "template": "Templates/Initiative.md"
+    },
+    {
       "folder": "Tasks",
       "template": "Templates/Task.md"
     }

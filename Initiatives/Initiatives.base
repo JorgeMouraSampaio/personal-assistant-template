@@ -1,0 +1,43 @@
+properties:
+  file.name:
+    displayName: Title
+  note.Initiative Number:
+    displayName: Initiative
+  note.Stakeholders:
+    displayName: Stakeholders
+  note.Related Projects:
+    displayName: Related Projects
+  note.Related Tasks:
+    displayName: Related Tasks
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.hasTag("Initiative")
+    order:
+      - Initiative Number
+      - file.name
+      - Stakeholders
+      - Related Projects
+      - Related Tasks
+      - Link
+    sort:
+      - property: Initiative Number
+        direction: ASC
+    columnSize:
+      note.Initiative Number: 100
+      file.name: 420
+  - type: table
+    name: Company Initiatives
+    filters:
+      and:
+        - file.hasTag("Initiative")
+        - file.hasLink(this.file)
+    order:
+      - Initiative Number
+      - file.name
+      - Stakeholders
+    sort:
+      - property: Initiative Number
+        direction: ASC

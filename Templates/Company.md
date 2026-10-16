@@ -15,7 +15,10 @@ tags:
   - Company
 ${divBlock}Stakeholders:
 Projects:
+Meetings:
 Notes:
+Slack Channels:
+Slack DMs:
 ---
 `;
 await tp.file.move("Companies/" + name);
