@@ -152,7 +152,6 @@ tags:
   - Initiative
 Initiative Number: "6"       # ALWAYS quoted; its own sequence, (highest) + 1
 Company: "[[Acme]]"
-Status: In Progress
 Stakeholders:
   - "[[Jane Doe]]"
 Related Projects:            # quoted wikilinks to project notes

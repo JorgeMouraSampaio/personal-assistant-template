@@ -103,7 +103,7 @@ views:
     filters:
       and:
         - file.hasTag("Task")
-        - note.Initiative == this
+        - formula.Initiative == this
         - note.Status != "Discarded"
     groupBy:
       property: Status
